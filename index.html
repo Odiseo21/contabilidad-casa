@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Gastos Casa</title>
+<style>
+:root{
+  --bg:#0f1613; --panel:#17211c; --panel2:#1d2a23;
+  --line:#2a382f; --text:#eef2ef; --muted:#8fa196;
+  --accent:#5fb98c; --accent-dim:#3d7d5e;
+  --warn:#e0a84e; --debe:#d97b6c; --favor:#5fb98c; --fondo:#6b9fc9; --personal:#b98cd9;
+  --radius:14px;
+  font-size:16px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; padding-bottom:130px;}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif; font-weight:600; margin:0 0 4px;}
+.topbar{position:sticky; top:0; z-index:10; background:var(--bg); padding:14px 18px 0; border-bottom:1px solid var(--line);}
+.topbar h1{font-size:1.3rem; letter-spacing:.2px;}
+.topbar .sub{color:var(--muted); font-size:.82rem; margin-bottom:10px;}
+.modulo-switch{display:flex; gap:6px; padding-bottom:10px;}
+.modulo-switch button{flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--muted); padding:9px; border-radius:10px; font-weight:600; font-size:.85rem;}
+.modulo-switch button.active.casa{background:var(--accent-dim); color:#fff; border-color:var(--accent-dim);}
+.modulo-switch button.active.personal{background:#5c3d75; color:#fff; border-color:#5c3d75;}
+.wrap{padding:16px 16px 8px; max-width:520px; margin:0 auto;}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px;}
+.card h3{font-size:1rem; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;}
+label{display:block; font-size:.8rem; color:var(--muted); margin:10px 0 4px;}
+input,select,textarea{width:100%; background:var(--panel2); border:1px solid var(--line); color:var(--text); padding:11px 12px; border-radius:10px; font-size:1rem; font-family:inherit;}
+textarea{resize:vertical; min-height:60px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.row3{display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px;}
+button{font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; border:none; border-radius:10px; padding:12px 16px;}
+.btn-primary{background:var(--accent); color:#0b140f; width:100%; margin-top:16px;}
+.btn-primary.personal{background:var(--personal); color:#241730;}
+.btn-ghost{background:transparent; border:1px solid var(--line); color:var(--text);}
+.btn-danger{background:transparent; border:1px solid var(--debe); color:var(--debe);}
+.btn-sm{padding:7px 12px; font-size:.82rem;}
+.btn-xs{padding:5px 9px; font-size:.72rem; border-radius:8px;}
+.movtype-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px;}
+.movtype-grid button{background:var(--panel2); border:1px solid var(--line); color:var(--muted); font-size:.8rem; padding:12px 8px; text-align:left; line-height:1.25;}
+.movtype-grid button .ic{display:block; font-size:1.1rem; margin-bottom:3px;}
+.movtype-grid button.active{background:var(--accent-dim); color:#fff; border-color:var(--accent-dim);}
+.movtype-grid.p2{grid-template-columns:1fr 1fr;}
+.movtype-grid.p2 button.active{background:var(--personal); color:#241730; border-color:var(--personal);}
+.select-persona{display:flex; gap:8px; margin-top:6px;}
+.select-persona button{flex:1;}
+.select-persona button.active{background:var(--accent-dim); color:#fff; border-color:var(--accent-dim);}
+.balance-num{font-size:2.1rem; font-family:Georgia,serif; margin:2px 0;}
+.balance-num.favor{color:var(--favor);}
+.balance-num.debe{color:var(--debe);}
+.balance-num.positivo{color:var(--favor);}
+.balance-num.negativo{color:var(--debe);}
+.balance-sub{color:var(--muted); font-size:.85rem;}
+.split-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:.9rem;}
+.split-row:last-child{border-bottom:none;}
+.gasto-item{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);}
+.gasto-item:last-child{border-bottom:none;}
+.gasto-item .meta{font-size:.78rem; color:var(--muted);}
+.gasto-item .monto{font-weight:600; white-space:nowrap; margin-left:10px;}
+.tag{display:inline-block; font-size:.68rem; padding:2px 7px; border-radius:20px; background:var(--panel2); color:var(--muted); margin-right:6px;}
+.tag.extra{background:rgba(224,168,78,.18); color:var(--warn);}
+.tag.cuenta-p1{background:rgba(139,94,60,.35); color:#d9a876;}
+.tag.cuenta-p2{background:rgba(232,180,200,.25); color:#f0b8d0;}
+.tag.fondo{background:rgba(107,159,201,.18); color:var(--fondo);}
+.tag.ingreso{background:rgba(95,185,140,.18); color:var(--favor);}
+.tabbar{position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; background:var(--panel); border-top:1px solid var(--line); padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
+.tabbar button{flex:1; background:none; color:var(--muted); font-size:.7rem; font-weight:500; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px;}
+.tabbar button.active{color:var(--accent);}
+.tabbar .ic{font-size:1.2rem;}
+.view{display:none;}
+.view.active{display:block;}
+.empty{color:var(--muted); text-align:center; padding:30px 10px; font-size:.9rem;}
+.cat-row{display:flex; justify-content:space-between; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--line); gap:8px;}
+.cat-row:last-child{border-bottom:none;}
+.cat-items{font-size:.78rem; color:var(--muted); margin-top:3px;}
+.modal-bg{display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:30; align-items:flex-end; justify-content:center;}
+.modal-bg.active{display:flex;}
+.modal{background:var(--panel); border-radius:18px 18px 0 0; padding:20px; width:100%; max-width:520px; max-height:85vh; overflow-y:auto;}
+.modal h3{font-size:1.05rem; margin-bottom:14px;}
+.sync-dot{width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:5px;}
+.sync-dot.ok{background:var(--accent);} .sync-dot.pend{background:var(--warn);}
+.toast{position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:#26332b; color:var(--text); padding:10px 18px; border-radius:30px; font-size:.85rem; z-index:40; opacity:0; transition:opacity .25s; pointer-events:none; border:1px solid var(--line);}
+.toast.show{opacity:1;}
+.photo-preview{width:100%; border-radius:10px; margin-top:8px; max-height:180px; object-fit:cover;}
+small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
+.progress{height:8px; background:var(--panel2); border-radius:6px; overflow:hidden; margin-top:6px;}
+.progress-fill{height:100%; background:var(--accent);}
+.progress-fill.over{background:var(--debe);}
+.presu-row{padding:10px 0; border-bottom:1px solid var(--line);}
+.presu-row:last-child{border-bottom:none;}
+.presu-top{display:flex; justify-content:space-between; font-size:.88rem;}
+.presu-sub{font-size:.75rem; color:var(--muted); margin-top:2px;}
+.item-row{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:8px;}
+.item-row-top{display:flex; gap:6px; align-items:center;}
+.item-row-top input{flex:1;}
+.item-row .row2{margin-top:6px;}
+.item-row .credito-fields{display:none; margin-top:6px;}
+.item-row .credito-fields.show{display:grid;}
+.cuota-badge{font-size:.68rem; color:var(--fondo); margin-top:3px;}
+.pl-total{display:flex; justify-content:space-between; padding:10px 0; font-size:1rem; font-weight:600; border-top:1px solid var(--line); margin-top:4px;}
+</style>
+</head>
+<body>
+
+<!-- Overlay de sesión / perfiles -->
+<div class="modal-bg" id="loginOverlay" style="align-items:center">
+  <div class="modal" style="border-radius:18px; max-width:380px">
+    <h3 id="loginTitulo">¿Quién eres?</h3>
+    <div id="loginPerfiles"></div>
+    <div id="loginPinWrap" style="display:none; margin-top:10px">
+      <label>PIN</label>
+      <input id="loginPinInput" type="password" inputmode="numeric" maxlength="6">
+      <button class="btn-primary" onclick="confirmarLoginPin()">Ingresar</button>
+      <button class="btn-ghost btn-sm" style="width:100%; margin-top:8px" onclick="cancelarLoginPin()">Volver</button>
+    </div>
+  </div>
+</div>
+
+<div class="topbar">
+  <h1 id="tituloVista">Gastos Casa</h1>
+  <div class="sub" id="subVista">—</div>
+  <div class="modulo-switch">
+    <button id="btnModCasa" class="active casa" onclick="cambiarModulo('casa')">🏠 Casa</button>
+    <button id="btnModPersonal" class="personal" onclick="cambiarModulo('personal')">👤 Personal</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ================= REGISTRAR (CASA) ================= -->
+  <div class="view active" id="v-registrar" data-mod="casa">
+    <div class="card">
+      <h3>Carga rápida</h3>
+      <small class="hint">Trae todos los ítems fijos del catálogo con su monto habitual, más los presupuestos variables del mes (ej. Comida y Salidas) — todo en un solo paso en vez de uno por uno.</small>
+      <button class="btn-primary" style="margin-top:10px" onclick="abrirCargaFijos()">⚡ Cargar todos los fijos del mes</button>
+    </div>
+    <div class="card">
+      <h3>Nuevo movimiento</h3>
+      <label>Tipo de movimiento</label>
+      <div class="movtype-grid" id="movtypeGrid">
+        <button data-v="fijo" class="active"><span class="ic">🏠</span>Gasto Fijo<br><small style="color:var(--muted)">Colegio, dividendo, servicios</small></button>
+        <button data-v="variable"><span class="ic">🛒</span>Gasto Variable<br><small style="color:var(--muted)">Con presupuesto mensual</small></button>
+        <button data-v="cuenta"><span class="ic">💳</span>Cuenta a devolver<br><small style="color:var(--muted)">Extra pagado con plata propia</small></button>
+        <button data-v="aporte"><span class="ic">🏦</span>Aporte al fondo<br><small style="color:var(--muted)">Depósito a la cuenta común</small></button>
+      </div>
+
+      <div id="campoPersonaWrap" style="display:none">
+        <label id="labelPersona">Persona</label>
+        <div class="select-persona" id="movPersonaToggle">
+          <button data-v="p1" class="active btn-ghost"></button>
+          <button data-v="p2" class="btn-ghost"></button>
+        </div>
+      </div>
+
+      <div id="camposGasto">
+        <label>Categoría</label>
+        <select id="fCategoria"></select>
+
+        <div id="itemSelectWrap">
+          <label>Ítem</label>
+          <select id="fItemSelect"></select>
+        </div>
+        <div id="itemOtroWrap" style="display:none">
+          <label>Ítem (nuevo)</label>
+          <input id="fItemOtro" placeholder="Nombre del ítem">
+        </div>
+        <div id="cuotaInfo" class="cuota-badge"></div>
+      </div>
+
+      <div class="row2">
+        <div><label>Monto ($)</label><input id="fMonto" type="number" inputmode="numeric" placeholder="0"></div>
+        <div><label>Fecha</label><input id="fFecha" type="date"></div>
+      </div>
+
+      <label>Notas (opcional)</label>
+      <textarea id="fNotas" placeholder="Detalle, para qué fue, etc."></textarea>
+
+      <div id="campoFotoWrap">
+        <label>Foto de la boleta (se guarda solo en este celular)</label>
+        <input id="fFoto" type="file" accept="image/*" capture="environment">
+        <img id="fotoPreview" class="photo-preview" style="display:none">
+      </div>
+
+      <button class="btn-primary" onclick="guardarMovimiento()">Guardar</button>
+    </div>
+
+    <div class="card">
+      <h3>Últimos registrados <span style="float:right" id="mesRegistrarLabel"></span></h3>
+      <div id="listaRecientes"><div class="empty">Sin movimientos aún este mes</div></div>
+    </div>
+  </div>
+
+  <!-- ================= REGISTRAR (PERSONAL) ================= -->
+  <div class="view" id="v-registrar-personal" data-mod="personal">
+    <div class="card">
+      <h3>Nuevo movimiento personal</h3>
+      <label>Tipo</label>
+      <div class="movtype-grid p2" id="movtypeGridP">
+        <button data-v="ingreso" class="active"><span class="ic">💰</span>Ingreso<br><small style="color:var(--muted)">Honorarios, otros</small></button>
+        <button data-v="gasto"><span class="ic">🧾</span>Gasto personal</button>
+      </div>
+
+      <label>Categoría</label>
+      <select id="pCategoria"></select>
+      <div id="pItemSelectWrap">
+        <label>Ítem</label>
+        <select id="pItemSelect"></select>
+      </div>
+      <div id="pItemOtroWrap" style="display:none">
+        <label>Ítem (nuevo)</label>
+        <input id="pItemOtro" placeholder="Nombre del ítem">
+      </div>
+
+      <label>Perfil — ¿de quién es?</label>
+      <div class="select-persona" id="pPersonaToggle">
+        <button data-v="p1" class="active btn-ghost"></button>
+        <button data-v="p2" class="btn-ghost"></button>
+      </div>
+
+      <div class="row2">
+        <div><label>Monto ($)</label><input id="pMonto" type="number" inputmode="numeric" placeholder="0"></div>
+        <div><label>Fecha</label><input id="pFecha" type="date"></div>
+      </div>
+
+      <label>Notas (opcional)</label>
+      <textarea id="pNotas" placeholder="Detalle"></textarea>
+
+      <button class="btn-primary personal" onclick="guardarMovimientoPersonal()">Guardar</button>
+    </div>
+
+    <div class="card">
+      <h3>Últimos registrados <span style="float:right" id="mesRegistrarLabelP"></span></h3>
+      <div id="listaRecientesP"><div class="empty">Sin movimientos aún este mes</div></div>
+    </div>
+  </div>
+
+  <!-- ================= BALANCE (CASA) ================= -->
+  <div class="view" id="v-balance" data-mod="casa">
+    <div class="card">
+      <div class="row2" style="margin-bottom:6px">
+        <button class="btn-ghost btn-sm" onclick="cambiarMes(-1)">‹ Mes anterior</button>
+        <button class="btn-ghost btn-sm" onclick="cambiarMes(1)">Mes siguiente ›</button>
+      </div>
+      <h3 style="margin-top:10px" id="balanceMesLabel">—</h3>
+      <div id="balanceResumen"></div>
+    </div>
+    <div class="card">
+      <h3>Presupuestos variables del mes</h3>
+      <div id="listaPresupuestos"><div class="empty">Sin categorías variables configuradas</div></div>
+    </div>
+    <div class="card">
+      <h3>Cuentas por cobrar</h3>
+      <div id="listaCuentas"></div>
+    </div>
+    <div class="card" id="cierreCard">
+      <h3>Cierre del mes</h3>
+      <div id="cierreEstado"></div>
+    </div>
+    <div class="card">
+      <h3>Detalle de movimientos del mes</h3>
+      <div id="listaMes"><div class="empty">Sin movimientos este mes</div></div>
+    </div>
+  </div>
+
+  <!-- ================= ESTADO DE RESULTADOS (PERSONAL) ================= -->
+  <div class="view" id="v-resultados" data-mod="personal">
+    <div class="card">
+      <div class="row2" style="margin-bottom:6px">
+        <button class="btn-ghost btn-sm" onclick="cambiarMesP(-1)">‹ Mes anterior</button>
+        <button class="btn-ghost btn-sm" onclick="cambiarMesP(1)">Mes siguiente ›</button>
+      </div>
+      <h3 style="margin-top:10px" id="balanceMesLabelP">—</h3>
+      <div id="resultadoResumen"></div>
+    </div>
+    <div class="card">
+      <h3>Ingresos por categoría</h3>
+      <div id="listaIngresos"><div class="empty">Sin ingresos este mes</div></div>
+    </div>
+    <div class="card">
+      <h3>Gastos por categoría</h3>
+      <div id="listaGastosP"><div class="empty">Sin gastos este mes</div></div>
+    </div>
+  </div>
+
+  <!-- ================= ANÁLISIS (CASA) ================= -->
+  <div class="view" id="v-analisis" data-mod="casa">
+    <div class="card">
+      <h3>Gasto total — últimos 6 meses</h3>
+      <div id="analisisTendenciaCasa"></div>
+    </div>
+    <div class="card">
+      <h3>Sobregasto promedio en variables</h3>
+      <div id="analisisPresupuestosCasa"></div>
+    </div>
+    <div class="card">
+      <h3>Cuentas por cobrar acumuladas (histórico)</h3>
+      <div id="analisisCuentasCasa"></div>
+    </div>
+    <div class="card">
+      <h3>Arrastre entre ustedes (histórico)</h3>
+      <small class="hint">Lo que quedó sin liquidar al cierre de cada mes. Si ves varios meses seguidos con arrastre a favor de la misma persona, es la señal de que uno está financiando al otro sin que se note — por eso está aquí, no escondido.</small>
+      <div id="analisisArrastreCasa" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>Recomendaciones</h3>
+      <div id="analisisRecomendacionesCasa"></div>
+    </div>
+  </div>
+
+  <!-- ================= CATEGORIAS (CASA) ================= -->
+  <div class="view" id="v-categorias" data-mod="casa">
+    <div class="card">
+      <h3>Perfiles y permisos <span id="sesionActualLabel" class="hint" style="float:right"></span></h3>
+      <small class="hint">Con al menos un PIN configurado, solo el perfil "Administrador" puede editar catálogo de categorías, presupuestos y cuentas bancarias — cualquiera puede registrar movimientos, marcar pagos y agregar compras a cuotas.</small>
+      <div id="listaPerfiles" style="margin-top:8px"></div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="abrirModalPerfil()">+ Nuevo perfil</button>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="cerrarSesion()">Cerrar sesión (cambiar de perfil)</button>
+    </div>
+    <div class="card">
+      <h3>Cuentas bancarias / tarjetas</h3>
+      <small class="hint">Marca de quién es cada cuenta. Si un gasto fijo/variable se paga desde la cuenta personal de alguien (ej. el hipotecario se debita solo de la cuenta de Nico), esa persona queda acreditada automáticamente por ese pago hacia su aporte del mes — sin eso, ese pago queda invisible y puede generar una asimetría que nadie nota.</small>
+      <div id="listaCuentasBanco" style="margin-top:8px"></div>
+      <div class="row2" style="margin-top:8px">
+        <input id="nuevaCuentaInput" placeholder="Nombre de la cuenta">
+        <select id="nuevaCuentaDueño">
+          <option value="p1"></option>
+          <option value="p2"></option>
+          <option value="comun">Fondo Común</option>
+        </select>
+      </div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="agregarCuentaBanco()">+ Agregar cuenta</button>
+    </div>
+    <div class="card">
+      <h3>Compras a cuotas <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCuota()">+ Nueva</button></h3>
+      <small class="hint">No es un gasto opcional del mes — mientras esté activa, la cuota correspondiente se registra sola en el Balance cada mes, sin que tengas que confirmarla.</small>
+      <div id="listaCuotas" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>Gastos fijos (catálogo) <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCategoria('fijo')">+ Nueva</button></h3>
+      <small class="hint">Cada ítem puede llevar monto habitual, medio de pago y cuotas si es crédito — se precarga automáticamente al registrar.</small>
+      <div id="listaCategoriasFijas" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3>Categorías variables (con presupuesto) <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCategoria('variable')">+ Nueva</button></h3>
+      <div id="listaCategoriasVariables"></div>
+    </div>
+    <div class="card">
+      <h3>Nombres de las dos personas</h3>
+      <label>Persona 1</label><input id="cfgP1" oninput="guardarConfigNombres()">
+      <label>Persona 2</label><input id="cfgP2" oninput="guardarConfigNombres()">
+    </div>
+    <div class="card">
+      <h3>Importar extracto bancario (CSV)</h3>
+      <small class="hint">Sube el CSV que descargas de tu banco (transacciones de una cuenta o tarjeta) — se detectan columnas de fecha, descripción y monto automáticamente. Si subes dos extractos con fechas que se traslapan, las transacciones repetidas no se duplican (se identifican por fecha+descripción+monto).</small>
+      <label style="margin-top:10px">¿De quién es esta cuenta?</label>
+      <div class="select-persona" id="csvPersonaToggle">
+        <button data-v="p1" class="active"></button>
+        <button data-v="p2"></button>
+      </div>
+      <label>Nombre de la cuenta (ej. "Cta Cte BCI Nico")</label>
+      <input id="csvCuentaNombre" placeholder="Nombre de la cuenta">
+      <label style="margin-top:8px">Archivo CSV</label>
+      <input id="csvBancoFile" type="file" accept=".csv,text/csv">
+      <div id="csvResumen" class="hint" style="margin-top:6px"></div>
+    </div>
+    <div class="card">
+      <h3>Exportar movimientos (CSV / Excel)</h3>
+      <small class="hint">Descarga todos los movimientos de Casa como planilla, para abrir en Excel o Google Sheets.</small>
+      <button class="btn-ghost btn-sm" style="margin-top:10px; width:100%" onclick="exportarMovimientosCSV()">Exportar movimientos a CSV</button>
+    </div>
+    <div class="card">
+      <h3>Respaldo e importación histórica</h3>
+      <small class="hint">Exporta todo lo cargado como respaldo, o importa un archivo de movimientos preparado (ej. tu historial del Excel). Los registros duplicados por ID no se vuelven a agregar. El historial importado del Excel no trae datos de quién aportó/pagó cada cosa (esa info no existía en el archivo original) — no uses "Cerrar mes" en meses históricos importados, el balance de esos meses solo sirve como referencia de gasto total, no como cálculo de reparto real.</small>
+      <button class="btn-ghost btn-sm" style="margin-top:10px; width:100%" onclick="exportarRespaldo()">Exportar respaldo completo (JSON)</button>
+      <label style="margin-top:14px">Importar movimientos (JSON)</label>
+      <input id="importFile" type="file" accept="application/json">
+      <div id="importResumen" class="hint" style="margin-top:6px"></div>
+      <button class="btn-danger btn-sm" style="margin-top:14px; width:100%" onclick="resincronizarTodoCasa()">⚠ Reenviar TODOS los movimientos al Sheet (recuperar sincronización)</button>
+      <small class="hint">Úsalo si el Sheet quedó con datos incompletos o desordenados. Antes, borra el contenido de la hoja "Movimientos" en Google Sheets para partir limpio — esto no duplica si algunos IDs ya existen.</small>
+    </div>
+    <div class="card">
+      <h3>Conexión con Google Sheets</h3>
+      <label>URL del Google Sheet (Apps Script)</label>
+      <input id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+      <small class="hint">Pega aquí la URL de implementación de tu Apps Script (termina en /exec). Es una sola URL compartida por todos los perfiles — la guarda este celular.</small>
+      <button class="btn-primary" style="margin-top:10px" onclick="guardarSheetsUrl()">Guardar URL</button>
+    </div>
+    <div class="card">
+      <h3>Sincronización</h3>
+      <div class="sync-dot" id="syncDot"></div><span id="syncTexto" style="font-size:.85rem; color:var(--muted)"></span>
+      <small class="hint">Se sincroniza sola al abrir la app y cada 3 minutos mientras está abierta. Úsalo manual si acabas de registrar algo en el otro celular y quieres verlo ya.</small>
+      <button class="btn-ghost btn-sm" style="margin-top:12px; width:100%" onclick="sincronizarDesdeSheets(false)">Sincronizar ahora</button>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reintentarSync()">Reintentar sincronización pendiente</button>
+    </div>
+  </div>
+
+  <!-- ================= ANÁLISIS (PERSONAL) ================= -->
+  <div class="view" id="v-analisis-personal" data-mod="personal">
+    <div class="card">
+      <h3>Ingresos vs. Gastos — últimos 6 meses</h3>
+      <div id="analisisTendenciaP"></div>
+    </div>
+    <div class="card">
+      <h3>Top categorías de gasto (6 meses)</h3>
+      <div id="analisisTopCategoriasP"></div>
+    </div>
+    <div class="card">
+      <h3>Recomendaciones</h3>
+      <div id="analisisRecomendacionesP"></div>
+    </div>
+  </div>
+
+  <!-- ================= CATEGORIAS (PERSONAL) ================= -->
+  <div class="view" id="v-categorias-personal" data-mod="personal">
+    <div class="card">
+      <h3>Categorías de ingreso <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCategoriaP('ingreso')">+ Nueva</button></h3>
+      <div id="listaCatIngreso"></div>
+    </div>
+    <div class="card">
+      <h3>Categorías de gasto personal <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCategoriaP('gasto')">+ Nueva</button></h3>
+      <div id="listaCatGastoP"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tabbar" id="tabbarCasa">
+  <button class="tab-btn active" data-view="v-registrar" onclick="mostrarVista('v-registrar')"><span class="ic">＋</span>Registrar</button>
+  <button class="tab-btn" data-view="v-balance" onclick="mostrarVista('v-balance')"><span class="ic">⚖</span>Balance</button>
+  <button class="tab-btn" data-view="v-analisis" onclick="mostrarVista('v-analisis')"><span class="ic">📈</span>Análisis</button>
+  <button class="tab-btn" data-view="v-categorias" onclick="mostrarVista('v-categorias')"><span class="ic">☰</span>Categorías</button>
+</div>
+<div class="tabbar" id="tabbarPersonal" style="display:none">
+  <button class="tab-btn active" data-view="v-registrar-personal" onclick="mostrarVista('v-registrar-personal')"><span class="ic">＋</span>Registrar</button>
+  <button class="tab-btn" data-view="v-resultados" onclick="mostrarVista('v-resultados')"><span class="ic">📊</span>Resultados</button>
+  <button class="tab-btn" data-view="v-analisis-personal" onclick="mostrarVista('v-analisis-personal')"><span class="ic">📈</span>Análisis</button>
+  <button class="tab-btn" data-view="v-categorias-personal" onclick="mostrarVista('v-categorias-personal')"><span class="ic">☰</span>Categorías</button>
+</div>
+
+<!-- Modal categoría CASA -->
+<div class="modal-bg" id="modalCategoria">
+  <div class="modal">
+    <h3 id="modalCatTitulo">Nueva categoría</h3>
+    <label>Nombre de la categoría</label>
+    <input id="modalCatNombre" placeholder="Ej: Vivienda - Servicios">
+
+    <div id="modalItemsFijo">
+      <label>Ítems del catálogo</label>
+      <div id="itemsFijoCont"></div>
+      <button class="btn-ghost btn-sm" onclick="agregarItemFijoRow()">+ Agregar ítem</button>
+    </div>
+
+    <div id="modalItemsVariable" style="display:none">
+      <label>Ítems (uno por línea)</label>
+      <textarea id="modalCatItemsVar" style="min-height:90px" placeholder="Supermercado&#10;Comida&#10;Salidas"></textarea>
+      <label>Presupuesto mensual ($)</label>
+      <input id="modalCatPresupuesto" type="number" inputmode="numeric" placeholder="450000">
+    </div>
+
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-ghost" onclick="cerrarModalCategoria()">Cancelar</button>
+      <button class="btn-primary" style="margin-top:0" onclick="guardarModalCategoria()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal categoría PERSONAL -->
+<div class="modal-bg" id="modalCategoriaP">
+  <div class="modal">
+    <h3 id="modalCatTituloP">Nueva categoría</h3>
+    <label>Nombre de la categoría</label>
+    <input id="modalCatNombreP" placeholder="Ej: Honorarios DAP">
+    <label>Ítems (uno por línea)</label>
+    <textarea id="modalCatItemsP" style="min-height:90px" placeholder="Honorario mensual&#10;Bono"></textarea>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-ghost" onclick="cerrarModalCategoriaP()">Cancelar</button>
+      <button class="btn-primary personal" style="margin-top:0" onclick="guardarModalCategoriaP()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal carga rápida de fijos -->
+<div class="modal-bg" id="modalCargaFijos">
+  <div class="modal">
+    <h3>Cargar fijos del mes</h3>
+    <label>Fecha para todos estos movimientos</label>
+    <input id="cargaFijosFecha" type="date">
+    <div id="cargaFijosCont" style="margin-top:10px"></div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-ghost" onclick="cerrarCargaFijos()">Cancelar</button>
+      <button class="btn-primary" style="margin-top:0" onclick="guardarCargaFijos()">Guardar seleccionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar movimiento CASA -->
+<div class="modal-bg" id="modalEditar">
+  <div class="modal">
+    <h3>Editar movimiento</h3>
+    <div id="editarTipoLabel" class="hint" style="margin-bottom:6px"></div>
+    <label>Categoría</label>
+    <input id="editCategoria">
+    <label>Ítem</label>
+    <input id="editItem">
+    <div class="row2">
+      <div><label>Monto ($)</label><input id="editMonto" type="number" inputmode="numeric"></div>
+      <div><label>Fecha</label><input id="editFecha" type="date"></div>
+    </div>
+    <div id="editPersonaWrap" style="display:none">
+      <label>Persona</label>
+      <div class="select-persona" id="editPersonaToggle">
+        <button data-v="p1" class="btn-ghost"></button>
+        <button data-v="p2" class="btn-ghost"></button>
+      </div>
+    </div>
+    <label>Notas</label>
+    <textarea id="editNotas"></textarea>
+    <div id="editPagoWrap">
+      <label>Estado de pago</label>
+      <div id="editPagoEstado" class="hint"></div>
+      <div id="editPagoPendienteWrap">
+        <label>Cuenta de destino del pago</label>
+        <select id="editCuentaOrigen"></select>
+        <button class="btn-ghost btn-sm" style="width:100%; margin-top:8px" onclick="marcarComoPagado()">✓ Marcar como pagado ahora</button>
+      </div>
+      <button class="btn-ghost btn-sm" id="revertirPagoBtn" style="width:100%; margin-top:8px; display:none" onclick="revertirPago()">Revertir a pendiente</button>
+    </div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-danger" onclick="eliminarMovimientoActual()">Eliminar</button>
+      <button class="btn-primary" style="margin-top:0" onclick="guardarEdicionMovimiento()">Guardar cambios</button>
+    </div>
+    <button class="btn-ghost btn-sm" style="width:100%; margin-top:8px" onclick="cerrarModalEditar()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal editar movimiento PERSONAL -->
+<div class="modal-bg" id="modalEditarP">
+  <div class="modal">
+    <h3>Editar movimiento personal</h3>
+    <label>Categoría</label>
+    <input id="editPCategoria">
+    <label>Ítem</label>
+    <input id="editPItem">
+    <div class="row2">
+      <div><label>Monto ($)</label><input id="editPMonto" type="number" inputmode="numeric"></div>
+      <div><label>Fecha</label><input id="editPFecha" type="date"></div>
+    </div>
+    <label>Perfil</label>
+    <div class="select-persona" id="editPPersonaToggle">
+      <button data-v="p1" class="btn-ghost"></button>
+      <button data-v="p2" class="btn-ghost"></button>
+    </div>
+    <label>Notas</label>
+    <textarea id="editPNotas"></textarea>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-danger" onclick="eliminarMovimientoPersonalActual()">Eliminar</button>
+      <button class="btn-primary personal" style="margin-top:0" onclick="guardarEdicionMovimientoPersonal()">Guardar cambios</button>
+    </div>
+    <button class="btn-ghost btn-sm" style="width:100%; margin-top:8px" onclick="cerrarModalEditarP()">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal compra a cuotas -->
+<div class="modal-bg" id="modalCuota">
+  <div class="modal">
+    <h3 id="modalCuotaTitulo">Nueva compra a cuotas</h3>
+    <label>Nombre de la compra</label>
+    <input id="cuotaNombre" placeholder="Ej: Sillón Falabella">
+    <label>Categoría asociada</label>
+    <select id="cuotaCategoria"></select>
+    <div class="row2">
+      <div><label>Monto de cada cuota ($)</label><input id="cuotaMonto" type="number" inputmode="numeric"></div>
+      <div><label>N° total de cuotas</label><input id="cuotaNTotal" type="number"></div>
+    </div>
+    <label>Cuota ya pagada hasta ahora (0 si es nueva)</label>
+    <input id="cuotaActualInput" type="number" value="0">
+    <label>Cuenta de destino (quién paga esto)</label>
+    <select id="cuotaCuentaDestino">
+      <option value="">(sin definir)</option>
+    </select>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-danger" id="cuotaBorrarBtn" style="display:none" onclick="borrarCuota()">Eliminar</button>
+      <button class="btn-ghost" onclick="cerrarModalCuota()">Cancelar</button>
+    </div>
+    <button class="btn-primary" onclick="guardarCuota()">Guardar</button>
+  </div>
+</div>
+
+<!-- Modal perfil -->
+<div class="modal-bg" id="modalPerfil">
+  <div class="modal">
+    <h3 id="modalPerfilTitulo">Perfil</h3>
+    <label>Nombre</label>
+    <input id="perfilNombreInput" placeholder="Nombre de la persona">
+    <label>PIN (opcional — vacío = sin restricción para este perfil)</label>
+    <input id="perfilPin" type="password" inputmode="numeric" maxlength="6">
+    <label>Rol</label>
+    <div class="pill-toggle" id="perfilRolToggle">
+      <button data-v="admin" class="active">Administrador</button>
+      <button data-v="aportante">Aportante</button>
+    </div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-danger" id="perfilBorrarBtn" style="display:none" onclick="borrarPerfil()">Eliminar</button>
+      <button class="btn-ghost" onclick="cerrarModalPerfil()">Cancelar</button>
+    </div>
+    <button class="btn-primary" onclick="guardarPerfil()">Guardar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+let SHEETS_URL = localStorage.getItem('gc-sheets-url') || '';
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const CATS_FIJAS_DEFAULT = [
+  {tipo:'fijo', nombre:'Vivienda - Servicios', items:[
+    {nombre:'Agua', montoHabitual:27850, medioPago:'Débito'},
+    {nombre:'Gas', montoHabitual:53235, medioPago:'Débito'},
+    {nombre:'Luz', montoHabitual:40400, medioPago:'Débito'},
+    {nombre:'Internet', montoHabitual:15990, medioPago:'Débito'}]},
+  {tipo:'fijo', nombre:'Vivienda - Crédito y Seguros', items:[
+    {nombre:'Dividendo/Hipoteca', montoHabitual:395918, medioPago:'Transferencia'},
+    {nombre:'Seguro Grles Casa', montoHabitual:46798, medioPago:'Débito'},
+    {nombre:'Seguro Complementario', montoHabitual:7897, medioPago:'Débito'}]},
+  {tipo:'fijo', nombre:'Suscripciones', items:[
+    {nombre:'Netflix', montoHabitual:9621, medioPago:'Crédito'},
+    {nombre:'Spotify', montoHabitual:7300, medioPago:'Crédito'},
+    {nombre:'Disney+', montoHabitual:14990, medioPago:'Crédito'},
+    {nombre:'Max', montoHabitual:9500, medioPago:'Crédito'},
+    {nombre:'Alexa', montoHabitual:7490, medioPago:'Crédito'}]},
+  {tipo:'fijo', nombre:'Colegio e Hijos', items:[
+    {nombre:'Colegio', montoHabitual:115600, medioPago:'Transferencia'},
+    {nombre:'Útiles Escolares', montoHabitual:40000, medioPago:'Débito'},
+    {nombre:'Buzos', montoHabitual:35000, medioPago:'Débito'},
+    {nombre:'Legoterapia', montoHabitual:40000, medioPago:'Transferencia'},
+    {nombre:'Sicóloga', montoHabitual:35000, medioPago:'Transferencia'},
+    {nombre:'Natación', montoHabitual:50000, medioPago:'Débito'}]},
+  {tipo:'fijo', nombre:'Mascotas', items:[
+    {nombre:'Comida Mascotas', montoHabitual:23650, medioPago:'Débito'},
+    {nombre:'Veterinario', montoHabitual:0, medioPago:'Débito'}]},
+  {tipo:'fijo', nombre:'Tarjetas de Crédito', items:[
+    {nombre:'Mastercard', montoHabitual:142500, medioPago:'Crédito', nCuotas:0, cuotaActual:0},
+    {nombre:'Visa', montoHabitual:5000, medioPago:'Crédito', nCuotas:0, cuotaActual:0}]},
+  {tipo:'fijo', nombre:'Transporte', items:[
+    {nombre:'Bencina', montoHabitual:0, medioPago:'Débito'},
+    {nombre:'Patente', montoHabitual:0, medioPago:'Débito'}]},
+  {tipo:'fijo', nombre:'Ahorro', items:[{nombre:'Ahorro', montoHabitual:100000, medioPago:'Transferencia'}]},
+  {tipo:'fijo', nombre:'Servicios Profesionales', items:[{nombre:'Contador', montoHabitual:10000, medioPago:'Transferencia'}]},
+];
+const CATS_VARIABLES_DEFAULT = [
+  {tipo:'variable', nombre:'Comida y Salidas', items:['Supermercado','Comida','Salidas'], presupuesto:450000},
+];
+const CATS_PERSONALES_DEFAULT = [
+  {tipo:'ingreso', nombre:'Honorarios', items:['Aerovías DAP','Funfood','RENOVAL SPA','Otro cliente']},
+  {tipo:'gasto', nombre:'Gastos Personales', items:['Auto','Salud','Ocio','Ropa','Otros']},
+];
+
+/* ============ ESTADO / STORAGE ============ */
+let MOVS = JSON.parse(localStorage.getItem('gc-movs-v3') || 'null');
+if(!MOVS) MOVS = migrarMovsAntiguos();
+let CATEGORIAS = JSON.parse(localStorage.getItem('gc-categorias-v3') || 'null') || [...CATS_FIJAS_DEFAULT, ...CATS_VARIABLES_DEFAULT];
+let CIERRES = JSON.parse(localStorage.getItem('gc-cierres') || '[]');
+let CONFIG = JSON.parse(localStorage.getItem('gc-config') || '{"p1":"Nico","p2":"Rosita"}');
+let PENDIENTES = JSON.parse(localStorage.getItem('gc-pendientes') || '[]');
+
+let PMOVS = JSON.parse(localStorage.getItem('gc-pmovs') || '[]');
+let CATEGORIAS_P = JSON.parse(localStorage.getItem('gc-categorias-p') || 'null') || CATS_PERSONALES_DEFAULT;
+let CUOTAS = JSON.parse(localStorage.getItem('gc-cuotas') || '[]');
+let PERFILES = JSON.parse(localStorage.getItem('gc-perfiles') || '[]');
+let CUENTAS = JSON.parse(localStorage.getItem('gc-cuentas') || '[]');
+let usuarioActivo = JSON.parse(localStorage.getItem('gc-sesion') || 'null');
+
+function migrarMovsAntiguos(){
+  // Los datos de versiones previas (v1/v2) tenían otra forma de "items" (string plano).
+  // No los migramos automáticamente para no arrastrar inconsistencias; se parte limpio en v3.
+  return [];
+}
+
+// Fotos de boletas y registros de borrado viven en claves aparte para no inflar MOVS.
+let FOTOS = JSON.parse(localStorage.getItem('gc-fotos') || '{}');
+let ELIMINADOS = JSON.parse(localStorage.getItem('gc-eliminados') || '{"ids":[],"cats":[],"catsP":[]}');
+// Migra fotos que versiones anteriores guardaban dentro de cada movimiento.
+MOVS.forEach(m=>{ if(m.fotoLocal){ FOTOS[m.id] = m.fotoLocal; } delete m.fotoLocal; });
+
+function persist(){
+  try{
+    localStorage.setItem('gc-movs-v3', JSON.stringify(MOVS));
+    localStorage.setItem('gc-categorias-v3', JSON.stringify(CATEGORIAS));
+    localStorage.setItem('gc-cierres', JSON.stringify(CIERRES));
+    localStorage.setItem('gc-config', JSON.stringify(CONFIG));
+    localStorage.setItem('gc-pendientes', JSON.stringify(PENDIENTES));
+    localStorage.setItem('gc-pmovs', JSON.stringify(PMOVS));
+    localStorage.setItem('gc-categorias-p', JSON.stringify(CATEGORIAS_P));
+    localStorage.setItem('gc-cuotas', JSON.stringify(CUOTAS));
+    localStorage.setItem('gc-perfiles', JSON.stringify(PERFILES));
+    localStorage.setItem('gc-cuentas', JSON.stringify(CUENTAS));
+    localStorage.setItem('gc-eliminados', JSON.stringify(ELIMINADOS));
+  } catch(e){
+    console.log('Error guardando en localStorage:', e);
+    toast('⚠ Almacenamiento lleno: no se pudo guardar. Exporta un respaldo.');
+    return false;
+  }
+  try{ localStorage.setItem('gc-fotos', JSON.stringify(FOTOS)); }
+  catch(e){ toast('⚠ Sin espacio para guardar las fotos de boletas'); }
+  return true;
+}
+
+let hoy = new Date();
+// Fecha local YYYY-MM-DD (toISOString usa UTC y en Chile, de noche, da el día siguiente).
+function fechaLocalISO(d){
+  d = d || new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+let vistaMes = hoy.getMonth(), vistaAnio = hoy.getFullYear();
+let vistaMesP = hoy.getMonth(), vistaAnioP = hoy.getFullYear();
+let movTipoSel = 'fijo';
+let movPersonaSel = 'p1';
+let movTipoSelP = 'ingreso';
+let movPersonaSelP = 'p1';
+let fotoBase64 = null;
+let moduloActivo = 'casa';
+
+/* ============ MODULO SWITCH ============ */
+function cambiarModulo(m){
+  moduloActivo = m;
+  document.getElementById('btnModCasa').classList.toggle('active', m==='casa');
+  document.getElementById('btnModPersonal').classList.toggle('active', m==='personal');
+  document.getElementById('tabbarCasa').style.display = m==='casa' ? 'flex':'none';
+  document.getElementById('tabbarPersonal').style.display = m==='personal' ? 'flex':'none';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  if(m==='casa'){ document.getElementById('v-registrar').classList.add('active'); mostrarVista('v-registrar'); }
+  else { document.getElementById('v-registrar-personal').classList.add('active'); mostrarVista('v-registrar-personal'); }
+}
+
+/* ============ NAV ============ */
+function mostrarVista(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===id));
+  const titulos = {
+    'v-registrar':'Gastos Casa','v-balance':'Balance mensual','v-analisis':'Análisis Casa','v-categorias':'Categorías',
+    'v-registrar-personal':'Finanzas Personales','v-resultados':'Estado de resultados','v-analisis-personal':'Análisis Personal','v-categorias-personal':'Categorías personales'
+  };
+  document.getElementById('tituloVista').textContent = titulos[id];
+  const subs = {
+    'v-registrar':'Registra fijos, variables, cuentas o aportes','v-balance':'Reparto 50/50 con arrastre','v-analisis':'Tendencias y recomendaciones','v-categorias':'Catálogo de fijos, variables y presupuestos',
+    'v-registrar-personal':'Tus ingresos y gastos, independiente de la casa','v-resultados':'Ingresos − Gastos del mes','v-analisis-personal':'Tendencias y recomendaciones','v-categorias-personal':'Ajusta tus categorías'
+  };
+  document.getElementById('subVista').textContent = subs[id];
+
+  if(id==='v-balance') renderBalance();
+  if(id==='v-analisis') renderAnalisisCasa();
+  if(id==='v-categorias'){ renderCategorias(); renderCuotasList(); renderPerfilesList(); renderCuentasBanco(); renderSyncEstado(); document.getElementById('cfgP1').value=CONFIG.p1; document.getElementById('cfgP2').value=CONFIG.p2; document.getElementById('sheetsUrlInput').value = SHEETS_URL; }
+  if(id==='v-registrar') renderRecientes();
+  if(id==='v-registrar-personal') renderRecientesP();
+  if(id==='v-resultados') renderResultados();
+  if(id==='v-analisis-personal') renderAnalisisPersonal();
+  if(id==='v-categorias-personal') renderCategoriasP();
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function fmt(n){ return Math.round(n).toLocaleString('es-CL'); }
+function mensajeGuardado(){
+  return SHEETS_URL ? 'Guardado y enviado a Sheets' : 'Guardado en este celular (sin URL de Sheets configurada — solo local)';
+}
+
+/* ============ INIT FORM CASA ============ */
+function initForm(){
+  document.getElementById('fFecha').value = fechaLocalISO();
+  document.getElementById('movPersonaToggle').children[0].textContent = CONFIG.p1;
+  document.getElementById('movPersonaToggle').children[1].textContent = CONFIG.p2;
+
+  document.querySelectorAll('#movtypeGrid button').forEach(b=>{
+    b.onclick = ()=>{ movTipoSel=b.dataset.v; document.querySelectorAll('#movtypeGrid button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); actualizarCamposPorTipo(); };
+  });
+  document.querySelectorAll('#movPersonaToggle button').forEach(b=>{
+    b.onclick = ()=>{ movPersonaSel=b.dataset.v; document.querySelectorAll('#movPersonaToggle button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  document.getElementById('fCategoria').onchange = ()=>poblarItemSelect();
+  document.getElementById('fItemSelect').onchange = onItemSeleccionado;
+  actualizarCamposPorTipo();
+
+  document.getElementById('fFoto').onchange = (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        const maxSide = 1200; let w=img.width, h=img.height;
+        if(w>h && w>maxSide){ h=h*maxSide/w; w=maxSide; } else if(h>maxSide){ w=w*maxSide/h; h=maxSide; }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        fotoBase64 = canvas.toDataURL('image/jpeg',0.85);
+        document.getElementById('fotoPreview').src = fotoBase64;
+        document.getElementById('fotoPreview').style.display='block';
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Personal
+  document.getElementById('pFecha').value = fechaLocalISO();
+  document.getElementById('pPersonaToggle').children[0].textContent = CONFIG.p1;
+  document.getElementById('pPersonaToggle').children[1].textContent = CONFIG.p2;
+  document.querySelectorAll('#pPersonaToggle button').forEach(b=>{
+    b.onclick = ()=>{ movPersonaSelP=b.dataset.v; document.querySelectorAll('#pPersonaToggle button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  document.querySelectorAll('#movtypeGridP button').forEach(b=>{
+    b.onclick = ()=>{ movTipoSelP=b.dataset.v; document.querySelectorAll('#movtypeGridP button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); poblarSelectCategoriaP(); };
+  });
+  document.getElementById('pCategoria').onchange = ()=>poblarItemSelectP();
+  poblarSelectCategoriaP();
+}
+
+function actualizarCamposPorTipo(){
+  const catWrap = document.getElementById('camposGasto');
+  const personaWrap = document.getElementById('campoPersonaWrap');
+  const fotoWrap = document.getElementById('campoFotoWrap');
+  const labelPersona = document.getElementById('labelPersona');
+
+  if(movTipoSel==='fijo'){ catWrap.style.display=''; personaWrap.style.display='none'; fotoWrap.style.display='none'; poblarSelectCategoria('fijo'); }
+  else if(movTipoSel==='variable'){ catWrap.style.display=''; personaWrap.style.display='none'; fotoWrap.style.display=''; poblarSelectCategoria('variable'); }
+  else if(movTipoSel==='cuenta'){ catWrap.style.display=''; personaWrap.style.display=''; fotoWrap.style.display=''; labelPersona.textContent='¿Quién pagó y a quién hay que devolverle?'; poblarSelectCategoria(null); }
+  else if(movTipoSel==='aporte'){ catWrap.style.display='none'; personaWrap.style.display=''; fotoWrap.style.display='none'; labelPersona.textContent='¿Quién aportó al fondo?'; }
+}
+
+function poblarSelectCategoria(filtroTipo){
+  const sel = document.getElementById('fCategoria');
+  const lista = filtroTipo ? CATEGORIAS.filter(c=>c.tipo===filtroTipo) : CATEGORIAS;
+  sel.innerHTML = lista.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  poblarItemSelect();
+}
+
+function poblarItemSelect(){
+  const cat = CATEGORIAS.find(c=>c.nombre===document.getElementById('fCategoria').value);
+  const sel = document.getElementById('fItemSelect');
+  document.getElementById('cuotaInfo').textContent = '';
+  if(!cat){ sel.innerHTML=''; return; }
+  if(cat.tipo==='fijo'){
+    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${it.nombre}">${it.nombre}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+  } else {
+    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${it}">${it}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+  }
+  onItemSeleccionado();
+}
+
+function onItemSeleccionado(){
+  const val = document.getElementById('fItemSelect').value;
+  const otroWrap = document.getElementById('itemOtroWrap');
+  const cuotaInfo = document.getElementById('cuotaInfo');
+  cuotaInfo.textContent='';
+  if(val==='__otro__'){ otroWrap.style.display=''; return; }
+  otroWrap.style.display='none';
+
+  const cat = CATEGORIAS.find(c=>c.nombre===document.getElementById('fCategoria').value);
+  if(cat && cat.tipo==='fijo'){
+    const it = (cat.items||[]).find(i=>i.nombre===val);
+    if(it){
+      if(it.montoHabitual) document.getElementById('fMonto').value = it.montoHabitual;
+      if(it.medioPago==='Crédito' && it.nCuotas>0){
+        cuotaInfo.textContent = `Crédito — cuota ${Math.min((it.cuotaActual||0)+1, it.nCuotas)} de ${it.nCuotas}`;
+      }
+    }
+  }
+}
+
+/* ============ GUARDAR MOVIMIENTO CASA ============ */
+function guardarMovimiento(){
+  const monto = parseFloat(document.getElementById('fMonto').value);
+  if(!monto || monto<=0){ toast('Falta el monto'); return; }
+  const fecha = document.getElementById('fFecha').value || fechaLocalISO();
+  const d = new Date(fecha+'T00:00:00');
+
+  let categoria = '', item = '';
+  if(movTipoSel==='fijo' || movTipoSel==='variable' || movTipoSel==='cuenta'){
+    categoria = document.getElementById('fCategoria').value;
+    const selVal = document.getElementById('fItemSelect').value;
+    item = selVal==='__otro__' ? document.getElementById('fItemOtro').value.trim() : selVal;
+    if(!item){ toast('Falta el ítem'); return; }
+  } else { categoria = 'Aporte Fondo Común'; item = 'Aporte'; }
+
+  const persona = (movTipoSel==='cuenta' || movTipoSel==='aporte') ? (movPersonaSel==='p1' ? CONFIG.p1 : CONFIG.p2) : '';
+  let cuentaDestino = '';
+  if(movTipoSel==='fijo'){
+    const catLookup = CATEGORIAS.find(c=>c.nombre===categoria);
+    const itLookup = catLookup && (catLookup.items||[]).find(i=>i.nombre===item);
+    cuentaDestino = itLookup ? (itLookup.cuentaDestino||'') : '';
+  }
+
+  const m = { id:'m'+Date.now()+Math.floor(Math.random()*1000), tipoMovimiento:movTipoSel, fecha, mes:d.getMonth(), anio:d.getFullYear(),
+    categoria, item, monto, persona, notas:document.getElementById('fNotas').value.trim(), tieneFotos:!!fotoBase64,
+    pagado: movTipoSel==='aporte', fechaPago: movTipoSel==='aporte' ? new Date().toISOString() : '', cuentaOrigen:cuentaDestino };
+  MOVS.push(m);
+  if(fotoBase64) FOTOS[m.id] = fotoBase64;
+
+  // Si es un ítem de crédito con cuotas, avanza la cuota actual del catálogo.
+  if(movTipoSel==='fijo'){
+    const cat = CATEGORIAS.find(c=>c.nombre===categoria);
+    const it = cat && (cat.items||[]).find(i=>i.nombre===item);
+    if(it && it.medioPago==='Crédito' && it.nCuotas>0 && it.cuotaActual < it.nCuotas){
+      it.cuotaActual = (it.cuotaActual||0) + 1;
+      sync('categorias', CATEGORIAS.filter(c=>c.tipo==='fijo'));
+    }
+  }
+
+  persist();
+  sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona, notas:m.notas, tieneFotos:m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''});
+
+  document.getElementById('fMonto').value=''; document.getElementById('fItemOtro').value=''; document.getElementById('fNotas').value='';
+  document.getElementById('fFoto').value=''; fotoBase64=null; document.getElementById('fotoPreview').style.display='none';
+  document.getElementById('cuotaInfo').textContent='';
+  toast(mensajeGuardado());
+  renderRecientes();
+}
+
+const TIPO_LABEL = {fijo:'Fijo', variable:'Variable', cuenta:'Cuenta', aporte:'Aporte Fondo'};
+const TIPO_TAGCLASS = {fijo:'', variable:'', cuenta:'extra', aporte:'fondo'};
+function tagClaseMovimiento(m){
+  if(m.tipoMovimiento==='cuenta'){
+    if(m.persona===CONFIG.p1) return 'cuenta-p1';
+    if(m.persona===CONFIG.p2) return 'cuenta-p2';
+  }
+  return TIPO_TAGCLASS[m.tipoMovimiento];
+}
+
+function renderRecientes(){
+  hoy = new Date();
+  document.getElementById('mesRegistrarLabel').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
+  const delMes = MOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,8);
+  const cont = document.getElementById('listaRecientes');
+  if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
+  cont.innerHTML = delMes.map(m=>`
+    <div class="gasto-item" onclick="abrirModalEditar('${m.id}')" style="cursor:pointer">
+      <div><div>${m.item} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
+      <div class="meta">${m.persona ? m.persona+' · ' : ''}${m.categoria}</div></div>
+      <div class="monto">$${fmt(m.monto)}
+        ${(m.tipoMovimiento!=='aporte' && !m.pagado)?`<button class="btn-ghost btn-xs" style="margin-left:8px; color:var(--favor); border-color:var(--favor)" onclick="event.stopPropagation(); marcarPagadoDirecto('${m.id}')">✓ Pagado</button>`:''}
+        <button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoDirecto('${m.id}')">✕</button>
+      </div></div>`).join('');
+}
+
+/* ============ BALANCE CASA ============ */
+function cambiarMes(delta){ vistaMes+=delta; if(vistaMes<0){vistaMes=11; vistaAnio--;} if(vistaMes>11){vistaMes=0; vistaAnio++;} renderBalance(); }
+function arrastrePrevio(mes, anio){ let pm=mes-1, pa=anio; if(pm<0){pm=11; pa--;} const c=CIERRES.find(x=>x.mes===pm && x.anio===pa); return c?c.arrastre:0; }
+
+function calcularBalance(mes, anio){
+  const delMes = MOVS.filter(m=>m.mes===mes && m.anio===anio);
+  const gastos = delMes.filter(m=>m.tipoMovimiento!=='aporte');
+  const total = gastos.reduce((s,m)=>s+m.monto,0);
+  const aporteReq = total/2;
+  const aportesFondoP1 = delMes.filter(m=>m.tipoMovimiento==='aporte' && m.persona===CONFIG.p1).reduce((s,m)=>s+m.monto,0);
+  const aportesFondoP2 = delMes.filter(m=>m.tipoMovimiento==='aporte' && m.persona===CONFIG.p2).reduce((s,m)=>s+m.monto,0);
+  const cuentaP1 = delMes.filter(m=>m.tipoMovimiento==='cuenta' && m.persona===CONFIG.p1).reduce((s,m)=>s+m.monto,0);
+  const cuentaP2 = delMes.filter(m=>m.tipoMovimiento==='cuenta' && m.persona===CONFIG.p2).reduce((s,m)=>s+m.monto,0);
+
+  // Un gasto FIJO o VARIABLE ya pagado y cuya cuenta de destino es la cuenta
+  // PERSONAL de alguien (no el fondo común) significa que esa persona lo
+  // financió de su bolsillo, aunque nadie lo haya marcado como "Cuenta a
+  // devolver". Sin esto, pagos automáticos (ej. hipotecario debitado siempre
+  // de la cuenta de uno) quedan invisibles y generan una asimetría oculta.
+  const pagadosDesdeCuentaPersonal = delMes.filter(m=>(m.tipoMovimiento==='fijo'||m.tipoMovimiento==='variable') && m.pagado && m.cuentaOrigen);
+  const creditoPersonalP1 = pagadosDesdeCuentaPersonal.filter(m=>dueñoCuenta(cuentaPorNombre(m.cuentaOrigen)||{dueño:'comun'})==='p1').reduce((s,m)=>s+m.monto,0);
+  const creditoPersonalP2 = pagadosDesdeCuentaPersonal.filter(m=>dueñoCuenta(cuentaPorNombre(m.cuentaOrigen)||{dueño:'comun'})==='p2').reduce((s,m)=>s+m.monto,0);
+
+  const contribP1 = aportesFondoP1 + cuentaP1 + creditoPersonalP1, contribP2 = aportesFondoP2 + cuentaP2 + creditoPersonalP2;
+  const arrastre = arrastrePrevio(mes, anio);
+  const neto = (contribP1 - aporteReq) + arrastre;
+  const pendienteP1 = Math.max(0, aporteReq - contribP1);
+  const pendienteP2 = Math.max(0, aporteReq - contribP2);
+  return {delMes, gastos, total, aporteReq, aportesFondoP1, aportesFondoP2, cuentaP1, cuentaP2, creditoPersonalP1, creditoPersonalP2, contribP1, contribP2, arrastre, neto, pendienteP1, pendienteP2};
+}
+
+function renderBalance(){
+  document.getElementById('balanceMesLabel').textContent = MESES[vistaMes]+' '+vistaAnio;
+  const b = calcularBalance(vistaMes, vistaAnio);
+  const favor = b.neto>=0?CONFIG.p1:CONFIG.p2, debe = b.neto>=0?CONFIG.p2:CONFIG.p1, monto=Math.abs(b.neto);
+  const cierreExistente = CIERRES.find(c=>c.mes===vistaMes && c.anio===vistaAnio);
+
+  const encabezado = cierreExistente
+    ? `<div class="balance-num favor">Cerrado</div>
+       <div class="balance-sub">Mes liquidado — ${cierreExistente.arrastre===0?'sin arrastre':( (cierreExistente.arrastre>=0?CONFIG.p1:CONFIG.p2)+' queda con $'+fmt(Math.abs(cierreExistente.arrastre))+' a favor para el próximo mes')}</div>`
+    : `<div class="balance-sub" style="margin-bottom:10px">Falta depositar al fondo común este mes:</div>
+       <div class="split-row" style="font-size:1.1rem"><span>${CONFIG.p1}</span><span class="balance-num" style="font-size:1.3rem; margin:0">$${fmt(b.pendienteP1)}</span></div>
+       <div class="split-row" style="font-size:1.1rem"><span>${CONFIG.p2}</span><span class="balance-num" style="font-size:1.3rem; margin:0">$${fmt(b.pendienteP2)}</span></div>
+       <div class="balance-sub" style="margin-top:10px">${monto<1?'Con eso quedan parejos.':'Si se liquidara hoy tal cual está, correspondería que '+debe+' le transfiera $'+fmt(monto)+' a '+favor+' — o que lo deposite de más al fondo. Esto es solo el cálculo en curso, no una deuda fija mientras el mes no se cierre.'}</div>`;
+
+  document.getElementById('balanceResumen').innerHTML = `
+    ${encabezado}
+    <div style="margin-top:14px">
+      <div class="split-row"><span>Total gastos reales del mes</span><span>$${fmt(b.total)}</span></div>
+      <div class="split-row"><span>Aporte requerido c/u (50%)</span><span>$${fmt(b.aporteReq)}</span></div>
+      <div class="split-row"><span>Aportes al fondo — ${CONFIG.p1}</span><span>$${fmt(b.aportesFondoP1)}</span></div>
+      <div class="split-row"><span>Aportes al fondo — ${CONFIG.p2}</span><span>$${fmt(b.aportesFondoP2)}</span></div>
+      <div class="split-row"><span>Cuentas por cobrar — ${CONFIG.p1}</span><span>$${fmt(b.cuentaP1)}</span></div>
+      <div class="split-row"><span>Cuentas por cobrar — ${CONFIG.p2}</span><span>$${fmt(b.cuentaP2)}</span></div>
+      <div class="split-row"><span>Fijos/variables pagados desde cuenta personal — ${CONFIG.p1}</span><span>$${fmt(b.creditoPersonalP1)}</span></div>
+      <div class="split-row"><span>Fijos/variables pagados desde cuenta personal — ${CONFIG.p2}</span><span>$${fmt(b.creditoPersonalP2)}</span></div>
+      <div class="split-row"><span>Arrastre mes anterior</span><span>${b.arrastre>=0?'+':''}$${fmt(b.arrastre)} (a favor de ${b.arrastre>=0?CONFIG.p1:CONFIG.p2})</span></div>
+    </div>`;
+  renderPresupuestos(b.gastos);
+  document.getElementById('listaCuentas').innerHTML = `
+    <div class="split-row"><span>Por cobrar a favor de ${CONFIG.p1}</span><span>$${fmt(b.cuentaP1)}</span></div>
+    <div class="split-row"><span>Por cobrar a favor de ${CONFIG.p2}</span><span>$${fmt(b.cuentaP2)}</span></div>
+    <small class="hint">Ya están sumados a la contribución de cada uno arriba — no requieren descuento manual.</small>`;
+
+  const cierreDiv = document.getElementById('cierreEstado');
+  if(cierreExistente){
+    cierreDiv.innerHTML = `<div class="split-row"><span>Saldo calculado</span><span>$${fmt(cierreExistente.saldoCalculado)}</span></div>
+      <div class="split-row"><span>Monto liquidado</span><span>$${fmt(cierreExistente.montoLiquidado)}</span></div>
+      <div class="split-row"><span>Queda arrastrado</span><span>$${fmt(cierreExistente.arrastre)}</span></div>
+      <button class="btn-ghost btn-sm" style="margin-top:10px; width:100%" onclick="reabrirCierre()">Reabrir y corregir cierre</button>`;
+  } else {
+    cierreDiv.innerHTML = `<label>¿Cuánto se liquidó/transfirió realmente el día 2?</label>
+      <input id="montoLiquidadoInput" type="number" placeholder="${Math.abs(b.neto)}">
+      <small class="hint">La diferencia se arrastra automáticamente al balance del próximo mes.</small>
+      <button class="btn-primary" onclick="cerrarMes(${b.neto})">Cerrar este mes</button>`;
+  }
+  renderListaMes(b.delMes);
+}
+
+function renderPresupuestos(gastosDelMes){
+  const variables = CATEGORIAS.filter(c=>c.tipo==='variable');
+  const cont = document.getElementById('listaPresupuestos');
+  if(!variables.length){ cont.innerHTML='<div class="empty">Sin categorías variables configuradas</div>'; return; }
+  cont.innerHTML = variables.map(c=>{
+    const gastado = gastosDelMes.filter(m=>m.tipoMovimiento==='variable' && m.categoria===c.nombre).reduce((s,m)=>s+m.monto,0);
+    const presu = c.presupuesto||0, pct = presu>0?Math.min(100,gastado/presu*100):0, over = gastado>presu;
+    return `<div class="presu-row"><div class="presu-top"><span>${c.nombre}</span><span>$${fmt(gastado)} / $${fmt(presu)}</span></div>
+      <div class="progress"><div class="progress-fill ${over?'over':''}" style="width:${pct}%"></div></div>
+      ${over?`<div class="presu-sub" style="color:var(--debe)">Sobregasto de $${fmt(gastado-presu)}</div>`:''}</div>`;
+  }).join('');
+}
+
+function cerrarMes(neto){
+  const inputVal = document.getElementById('montoLiquidadoInput').value;
+  const montoLiquidado = inputVal===''?Math.abs(neto):parseFloat(inputVal);
+  const liquidadoConSigno = neto>=0?montoLiquidado:-montoLiquidado;
+  const arrastre = neto - liquidadoConSigno;
+  const idx = CIERRES.findIndex(c=>c.mes===vistaMes && c.anio===vistaAnio);
+  const registro = {mes:vistaMes, anio:vistaAnio, saldoCalculado:neto, montoLiquidado:liquidadoConSigno, arrastre};
+  if(idx>=0) CIERRES[idx]=registro; else CIERRES.push(registro);
+  persist();
+  sync('cierre', {mes:MESES[vistaMes], anio:vistaAnio, saldoCalculado:neto, montoLiquidado:liquidadoConSigno, arrastre});
+  toast('Mes cerrado'); renderBalance();
+}
+function reabrirCierre(){ CIERRES = CIERRES.filter(c=>!(c.mes===vistaMes && c.anio===vistaAnio)); persist(); renderBalance(); }
+
+function renderListaMes(delMes){
+  const cont = document.getElementById('listaMes');
+  if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos este mes</div>'; return; }
+  cont.innerHTML = delMes.slice().sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>`
+    <div class="gasto-item" onclick="abrirModalEditar('${m.id}')" style="cursor:pointer">
+      <div><div>${m.item} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
+      <div class="meta">${m.persona?m.persona+' · ':''}${m.categoria} · ${m.fecha}</div></div>
+      <div class="monto">$${fmt(m.monto)}
+        ${(m.tipoMovimiento!=='aporte' && !m.pagado)?`<button class="btn-ghost btn-xs" style="margin-left:8px; color:var(--favor); border-color:var(--favor)" onclick="event.stopPropagation(); marcarPagadoDirecto('${m.id}')">✓ Pagado</button>`:''}
+        <button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoDirecto('${m.id}')">✕</button>
+      </div></div>`).join('');
+}
+
+function marcarPagadoDirecto(id){
+  const m = MOVS.find(x=>x.id===id);
+  if(!m) return;
+  m.pagado = true;
+  m.fechaPago = new Date().toISOString();
+  // si el ítem ya tiene una cuenta de destino configurada en el catálogo, la usa; si no, queda sin cuenta (se puede completar editando).
+  persist();
+  sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas, tieneFotos:!!m.tieneFotos, pagado:true, fechaPago:m.fechaPago, cuentaOrigen:m.cuentaOrigen||''});
+  toast('Marcado como pagado'+(m.cuentaOrigen?' — '+m.cuentaOrigen:''));
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+function eliminarMovimientoDirecto(id){
+  if(!confirm('¿Eliminar este movimiento? No se puede deshacer.')) return;
+  MOVS = MOVS.filter(x=>x.id!==id);
+  ELIMINADOS.ids.push(id); delete FOTOS[id];
+  sync('eliminar_movimiento', {id});
+  persist();
+  toast('Movimiento eliminado');
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+/* ============ EDITAR / ELIMINAR MOVIMIENTO (CASA) ============ */
+let editandoId = null;
+function abrirModalEditar(id){
+  const m = MOVS.find(x=>x.id===id);
+  if(!m) return;
+  editandoId = id;
+  document.getElementById('editarTipoLabel').textContent = TIPO_LABEL[m.tipoMovimiento];
+  document.getElementById('editCategoria').value = m.categoria;
+  document.getElementById('editItem').value = m.item;
+  document.getElementById('editMonto').value = m.monto;
+  document.getElementById('editFecha').value = m.fecha;
+  document.getElementById('editNotas').value = m.notas||'';
+  const necesitaPersona = (m.tipoMovimiento==='cuenta' || m.tipoMovimiento==='aporte');
+  document.getElementById('editPersonaWrap').style.display = necesitaPersona ? '' : 'none';
+  if(necesitaPersona){
+    document.getElementById('editPersonaToggle').children[0].textContent = CONFIG.p1;
+    document.getElementById('editPersonaToggle').children[1].textContent = CONFIG.p2;
+    [...document.getElementById('editPersonaToggle').children].forEach(b=>{
+      b.classList.toggle('active', (b.dataset.v==='p1'?CONFIG.p1:CONFIG.p2)===m.persona);
+      b.onclick = ()=>{ [...document.getElementById('editPersonaToggle').children].forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+    });
+  }
+
+  document.getElementById('editPagoWrap').style.display = m.tipoMovimiento==='aporte' ? 'none' : '';
+  document.getElementById('editCuentaOrigen').innerHTML = CUENTAS.map(c=>`<option value="${nombreCuenta(c)}">${nombreCuenta(c)}</option>`).join('') || '<option value="">(sin cuentas configuradas)</option>';
+  document.getElementById('editCuentaOrigen').value = m.cuentaOrigen || '';
+  if(m.pagado){
+    document.getElementById('editPagoEstado').textContent = `Pagado el ${formatFechaHora(m.fechaPago)}${m.cuentaOrigen ? ' — '+m.cuentaOrigen : ''}`;
+    document.getElementById('editPagoPendienteWrap').style.display='none';
+    document.getElementById('revertirPagoBtn').style.display='';
+  } else {
+    document.getElementById('editPagoEstado').textContent = 'Pendiente de pago';
+    document.getElementById('editPagoPendienteWrap').style.display='';
+    document.getElementById('revertirPagoBtn').style.display='none';
+  }
+  document.getElementById('modalEditar').classList.add('active');
+}
+function cerrarModalEditar(){ document.getElementById('modalEditar').classList.remove('active'); editandoId=null; }
+
+function formatFechaHora(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CL')+' '+d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+}
+
+function marcarComoPagado(){
+  const m = MOVS.find(x=>x.id===editandoId);
+  if(!m) return;
+  m.pagado = true;
+  m.fechaPago = new Date().toISOString();
+  m.cuentaOrigen = document.getElementById('editCuentaOrigen').value || '';
+  persist();
+  sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas, tieneFotos:!!m.tieneFotos, pagado:true, fechaPago:m.fechaPago, cuentaOrigen:m.cuentaOrigen});
+  toast('Marcado como pagado');
+  abrirModalEditar(editandoId);
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+function revertirPago(){
+  const m = MOVS.find(x=>x.id===editandoId);
+  if(!m) return;
+  m.pagado = false; m.fechaPago=''; m.cuentaOrigen='';
+  persist();
+  sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas, tieneFotos:!!m.tieneFotos, pagado:false, fechaPago:'', cuentaOrigen:''});
+  toast('Vuelto a pendiente');
+  abrirModalEditar(editandoId);
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+function guardarEdicionMovimiento(){
+  const m = MOVS.find(x=>x.id===editandoId);
+  if(!m) return;
+  m.categoria = document.getElementById('editCategoria').value.trim();
+  m.item = document.getElementById('editItem').value.trim();
+  m.monto = parseFloat(document.getElementById('editMonto').value) || m.monto;
+  m.fecha = document.getElementById('editFecha').value || m.fecha;
+  const d = new Date(m.fecha+'T00:00:00'); m.mes = d.getMonth(); m.anio = d.getFullYear();
+  m.notas = document.getElementById('editNotas').value.trim();
+  if(m.tipoMovimiento==='cuenta' || m.tipoMovimiento==='aporte'){
+    const activo = [...document.getElementById('editPersonaToggle').children].find(b=>b.classList.contains('active'));
+    if(activo) m.persona = activo.dataset.v==='p1' ? CONFIG.p1 : CONFIG.p2;
+  }
+  if(m.tipoMovimiento!=='aporte'){
+    const cuentaSel = document.getElementById('editCuentaOrigen').value;
+    if(cuentaSel) m.cuentaOrigen = cuentaSel;
+  }
+  persist();
+  sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas, tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''});
+  cerrarModalEditar();
+  toast('Movimiento actualizado');
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+function eliminarMovimientoActual(){
+  if(!confirm('¿Eliminar este movimiento? No se puede deshacer.')) return;
+  MOVS = MOVS.filter(x=>x.id!==editandoId);
+  ELIMINADOS.ids.push(editandoId); delete FOTOS[editandoId];
+  sync('eliminar_movimiento', {id:editandoId});
+  persist();
+  cerrarModalEditar();
+  toast('Movimiento eliminado');
+  renderRecientes();
+  if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+}
+
+function guardarSheetsUrl(){
+  const val = document.getElementById('sheetsUrlInput').value.trim();
+  if(val && !val.includes('script.google.com')){
+    if(!confirm('Esa URL no parece de Apps Script (no contiene script.google.com) — ¿guardarla igual?')) return;
+  }
+  SHEETS_URL = val;
+  localStorage.setItem('gc-sheets-url', SHEETS_URL);
+  renderSyncEstado();
+  if(SHEETS_URL){ toast('URL guardada — probando conexión...'); sincronizarDesdeSheets(false); }
+  else toast('URL borrada — la app queda solo local hasta que pegues una');
+}
+
+/* ============ SESIÓN / PERFILES / PERMISOS ============ */
+function esAdmin(){
+  const pinesConfigurados = PERFILES.some(p=>p.pin);
+  if(!pinesConfigurados) return true; // modo abierto: nadie ha configurado PIN todavía
+  return !!(usuarioActivo && usuarioActivo.rol==='admin');
+}
+function requiereAdmin(){
+  if(esAdmin()) return true;
+  toast('Solo el perfil Administrador puede hacer esto');
+  return false;
+}
+
+let loginPerfilSel = null;
+function mostrarLoginSiCorresponde(){
+  const pinesConfigurados = PERFILES.some(p=>p.pin);
+  if(!pinesConfigurados) return; // nada que pedir todavía
+  if(usuarioActivo && PERFILES.some(p=>p.nombre===usuarioActivo.nombre)) return; // ya hay sesión válida
+  const cont = document.getElementById('loginPerfiles');
+  cont.innerHTML = PERFILES.map(p=>`<button class="btn-ghost" style="width:100%; margin-top:8px" onclick="seleccionarPerfilLogin('${p.nombre}')">${p.nombre} <span class="hint" style="display:inline">(${p.rol})</span></button>`).join('');
+  document.getElementById('loginPinWrap').style.display='none';
+  document.getElementById('loginOverlay').classList.add('active');
+}
+function seleccionarPerfilLogin(nombre){
+  const p = PERFILES.find(x=>x.nombre===nombre);
+  if(!p) return;
+  loginPerfilSel = p;
+  if(!p.pin){ // sin PIN configurado para este perfil, entra directo
+    usuarioActivo = {nombre:p.nombre, rol:p.rol};
+    localStorage.setItem('gc-sesion', JSON.stringify(usuarioActivo));
+    document.getElementById('loginOverlay').classList.remove('active');
+    return;
+  }
+  document.getElementById('loginPinWrap').style.display='';
+  document.getElementById('loginPinInput').value='';
+}
+function confirmarLoginPin(){
+  const pin = document.getElementById('loginPinInput').value;
+  if(!loginPerfilSel || pin !== loginPerfilSel.pin){ toast('PIN incorrecto'); return; }
+  usuarioActivo = {nombre:loginPerfilSel.nombre, rol:loginPerfilSel.rol};
+  localStorage.setItem('gc-sesion', JSON.stringify(usuarioActivo));
+  document.getElementById('loginOverlay').classList.remove('active');
+}
+function cancelarLoginPin(){ loginPerfilSel=null; document.getElementById('loginPinWrap').style.display='none'; }
+function cerrarSesion(){
+  usuarioActivo = null;
+  localStorage.removeItem('gc-sesion');
+  mostrarLoginSiCorresponde();
+  toast('Sesión cerrada');
+}
+
+function renderPerfilesList(){
+  document.getElementById('sesionActualLabel').textContent = usuarioActivo ? `Sesión: ${usuarioActivo.nombre} (${usuarioActivo.rol})` : (PERFILES.some(p=>p.pin) ? 'Sin sesión' : 'Sin restricciones activas');
+  const cont = document.getElementById('listaPerfiles');
+  cont.innerHTML = PERFILES.length ? PERFILES.map((p,idx)=>`
+    <div class="cat-row"><div><div>${p.nombre}</div><div class="cat-items">Rol: ${p.rol} · PIN: ${p.pin?'configurado':'sin PIN'}</div></div>
+      <button class="btn-ghost btn-xs" onclick="abrirModalPerfil(${idx})">Editar</button></div>`).join('')
+    : '<div class="empty">Sin perfiles configurados — modo abierto, cualquiera puede editar todo</div>';
+}
+let perfilEditIdx = null;
+function abrirModalPerfil(idx){
+  if(PERFILES.length && !requiereAdmin()) return;
+  perfilEditIdx = (idx===undefined) ? null : idx;
+  document.getElementById('modalPerfilTitulo').textContent = perfilEditIdx===null ? 'Nuevo perfil' : 'Editar perfil';
+  document.getElementById('perfilBorrarBtn').style.display = perfilEditIdx===null ? 'none' : '';
+  const existente = perfilEditIdx===null ? null : PERFILES[perfilEditIdx];
+  document.getElementById('perfilNombreInput').value = existente ? existente.nombre : '';
+  document.getElementById('perfilPin').value = existente ? existente.pin : '';
+  document.querySelectorAll('#perfilRolToggle button').forEach(b=>{
+    b.classList.toggle('active', existente ? existente.rol===b.dataset.v : b.dataset.v==='admin');
+    b.onclick = ()=>{ document.querySelectorAll('#perfilRolToggle button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  document.getElementById('modalPerfil').classList.add('active');
+}
+function cerrarModalPerfil(){ document.getElementById('modalPerfil').classList.remove('active'); }
+function guardarPerfil(){
+  const nombre = document.getElementById('perfilNombreInput').value.trim();
+  if(!nombre){ toast('Falta el nombre'); return; }
+  const pin = document.getElementById('perfilPin').value.trim();
+  const rol = [...document.getElementById('perfilRolToggle').children].find(b=>b.classList.contains('active')).dataset.v;
+  const esNuevo = perfilEditIdx===null;
+  const nuevo = {nombre, pin, rol};
+  if(!esNuevo) PERFILES[perfilEditIdx]=nuevo; else PERFILES.push(nuevo);
+
+  // Si no hay sesión activa (ej. estás creando tu propio perfil recién ahora, o editando el que ya usas), te deja logueado como este perfil.
+  if(!usuarioActivo || usuarioActivo.nombre===nombre || (esNuevo && !PERFILES.some(p=>p.pin && p.nombre!==nombre))){
+    usuarioActivo = {nombre, rol};
+    localStorage.setItem('gc-sesion', JSON.stringify(usuarioActivo));
+  }
+
+  persist();
+  sync('perfiles', PERFILES);
+  cerrarModalPerfil();
+  renderPerfilesList();
+  toast('Perfil guardado');
+}
+function borrarPerfil(){
+  if(perfilEditIdx===null) return;
+  if(!requiereAdmin()) return;
+  if(!confirm('¿Eliminar este perfil?')) return;
+  const eliminado = PERFILES[perfilEditIdx];
+  PERFILES.splice(perfilEditIdx,1);
+  if(usuarioActivo && usuarioActivo.nombre===eliminado.nombre){ usuarioActivo=null; localStorage.removeItem('gc-sesion'); }
+  persist();
+  sync('perfiles', PERFILES);
+  cerrarModalPerfil();
+  renderPerfilesList();
+  toast('Perfil eliminado');
+}
+
+function nombreCuenta(c){ return typeof c==='string' ? c : c.nombre; }
+function dueñoCuenta(c){ return typeof c==='string' ? 'comun' : (c.dueño||'comun'); }
+function etiquetaDueño(d){ return d==='p1'?CONFIG.p1 : d==='p2'?CONFIG.p2 : 'Fondo Común'; }
+function cuentaPorNombre(nombre){ return CUENTAS.find(c=>nombreCuenta(c)===nombre); }
+
+function renderCuentasBanco(){
+  document.getElementById('nuevaCuentaDueño').innerHTML = `<option value="p1">${CONFIG.p1}</option><option value="p2">${CONFIG.p2}</option><option value="comun">Fondo Común</option>`;
+  const cont = document.getElementById('listaCuentasBanco');
+  cont.innerHTML = CUENTAS.length ? CUENTAS.map((c,i)=>`
+    <div class="cat-row"><div><div>${nombreCuenta(c)}</div><div class="cat-items">Dueño: ${etiquetaDueño(dueñoCuenta(c))}</div></div><button class="btn-danger btn-xs" onclick="borrarCuentaBanco(${i})">✕</button></div>`).join('')
+    : '<div class="empty">Sin cuentas configuradas</div>';
+}
+function agregarCuentaBanco(){
+  if(!requiereAdmin()) return;
+  const val = document.getElementById('nuevaCuentaInput').value.trim();
+  if(!val) return;
+  const dueño = document.getElementById('nuevaCuentaDueño').value;
+  CUENTAS.push({nombre:val, dueño});
+  persist(); sync('cuentas', CUENTAS.map(c=>({nombre:nombreCuenta(c), dueño:dueñoCuenta(c)})));
+  document.getElementById('nuevaCuentaInput').value='';
+  renderCuentasBanco();
+}
+function borrarCuentaBanco(idx){
+  if(!requiereAdmin()) return;
+  CUENTAS.splice(idx,1);
+  persist(); sync('cuentas', CUENTAS.map(c=>({nombre:nombreCuenta(c), dueño:dueñoCuenta(c)})));
+  renderCuentasBanco();
+}
+
+/* ============ COMPRAS A CUOTAS — se registran solas cada mes ============ */
+function renderCuotasList(){
+  const cont = document.getElementById('listaCuotas');
+  if(!CUOTAS.length){ cont.innerHTML = '<div class="empty">Sin compras a cuotas activas</div>'; return; }
+  cont.innerHTML = CUOTAS.map(c=>{
+    const idx = CUOTAS.indexOf(c);
+    const estado = c.activo ? `Cuota ${c.cuotaActual}/${c.nCuotas}` : 'Terminada';
+    return `<div class="cat-row"><div><div>${c.nombre} ${c.activo?'':'<span class="tag">Terminada</span>'}</div>
+      <div class="cat-items">${c.categoria} · $${fmt(c.montoCuota)}/mes · ${estado}</div></div>
+      <div style="display:flex; gap:6px; flex-shrink:0"><button class="btn-ghost btn-xs" onclick="abrirModalCuota(${idx})">Editar</button></div></div>`;
+  }).join('');
+}
+
+function abrirModalCuota(idx){
+  cuotaEditIdx = (idx===undefined) ? null : idx;
+  document.getElementById('modalCuotaTitulo').textContent = cuotaEditIdx===null ? 'Nueva compra a cuotas' : 'Editar compra a cuotas';
+  document.getElementById('cuotaCategoria').innerHTML = CATEGORIAS.filter(c=>c.tipo==='fijo').map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  document.getElementById('cuotaCuentaDestino').innerHTML = `<option value="">(sin definir)</option>` + CUENTAS.map(c=>`<option value="${nombreCuenta(c)}">${nombreCuenta(c)}</option>`).join('');
+  document.getElementById('cuotaBorrarBtn').style.display = cuotaEditIdx===null ? 'none' : '';
+  if(cuotaEditIdx===null){
+    document.getElementById('cuotaNombre').value = '';
+    document.getElementById('cuotaMonto').value = '';
+    document.getElementById('cuotaNTotal').value = '';
+    document.getElementById('cuotaActualInput').value = 0;
+    document.getElementById('cuotaCuentaDestino').value = '';
+  } else {
+    const c = CUOTAS[cuotaEditIdx];
+    document.getElementById('cuotaNombre').value = c.nombre;
+    document.getElementById('cuotaCategoria').value = c.categoria;
+    document.getElementById('cuotaMonto').value = c.montoCuota;
+    document.getElementById('cuotaNTotal').value = c.nCuotas;
+    document.getElementById('cuotaActualInput').value = c.cuotaActual;
+    document.getElementById('cuotaCuentaDestino').value = c.cuentaDestino || '';
+  }
+  document.getElementById('modalCuota').classList.add('active');
+}
+function cerrarModalCuota(){ document.getElementById('modalCuota').classList.remove('active'); }
+let cuotaEditIdx = null;
+
+function guardarCuota(){
+  const nombre = document.getElementById('cuotaNombre').value.trim();
+  const nCuotas = parseInt(document.getElementById('cuotaNTotal').value);
+  const montoCuota = parseFloat(document.getElementById('cuotaMonto').value);
+  if(!nombre || !nCuotas || !montoCuota){ toast('Completa nombre, monto y N° de cuotas'); return; }
+  const nueva = {
+    id: cuotaEditIdx===null ? 'q'+Date.now() : CUOTAS[cuotaEditIdx].id,
+    nombre, categoria: document.getElementById('cuotaCategoria').value,
+    montoCuota, nCuotas, cuotaActual: parseInt(document.getElementById('cuotaActualInput').value)||0,
+    activo: true, cuentaDestino: document.getElementById('cuotaCuentaDestino').value,
+  };
+  nueva.activo = nueva.cuotaActual < nueva.nCuotas;
+  if(cuotaEditIdx===null) CUOTAS.push(nueva); else CUOTAS[cuotaEditIdx] = nueva;
+  persist();
+  sync('cuotas', CUOTAS);
+  cerrarModalCuota();
+  renderCuotasList();
+  toast(mensajeGuardado());
+}
+function borrarCuota(){
+  if(cuotaEditIdx===null) return;
+  if(!confirm('¿Eliminar esta compra a cuotas? No borra los movimientos ya generados, solo detiene los futuros.')) return;
+  CUOTAS.splice(cuotaEditIdx,1);
+  persist();
+  sync('cuotas', CUOTAS);
+  cerrarModalCuota();
+  renderCuotasList();
+}
+
+/**
+ * Corre al abrir la app (y en cada sincronización periódica): para cada compra a
+ * cuotas activa, si el mes actual todavía no tiene su cuota registrada, la crea
+ * sola como gasto fijo — no requiere que nadie la confirme, porque ya es una
+ * deuda contraída, no una decisión mensual.
+ */
+function procesarCuotasAutomaticas(){
+  if(!CUOTAS.length) return;
+  hoy = new Date();
+  const mesActual = hoy.getMonth(), anioActual = hoy.getFullYear();
+  let generadas = [];
+  CUOTAS.forEach(c=>{
+    if(!c.activo || c.cuotaActual>=c.nCuotas) return;
+    // También se reconoce por el texto del ítem: cuotaId no viaja al Sheet, así que una cuota
+    // generada por el otro celular llega sin él y se duplicaría.
+    const yaExiste = MOVS.some(m=>m.mes===mesActual && m.anio===anioActual &&
+      (m.cuotaId===c.id || (m.tipoMovimiento==='fijo' && typeof m.item==='string' && m.item.startsWith(c.nombre+' (cuota '))));
+    if(yaExiste) return;
+    c.cuotaActual++;
+    const item = `${c.nombre} (cuota ${c.cuotaActual}/${c.nCuotas})`;
+    const m = { id:'mq'+Date.now()+Math.floor(Math.random()*1000), tipoMovimiento:'fijo',
+      fecha:fechaLocalISO(), mes:mesActual, anio:anioActual,
+      categoria:c.categoria, item, monto:c.montoCuota, persona:'', notas:'Cuota generada automáticamente', cuotaId:c.id, tieneFotos:false,
+      pagado:false, fechaPago:'', cuentaOrigen:c.cuentaDestino||'' };
+    MOVS.push(m);
+    sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
+    if(c.cuotaActual>=c.nCuotas) c.activo = false;
+    generadas.push(item);
+  });
+  if(generadas.length){
+    persist();
+    sync('cuotas', CUOTAS);
+    toast(generadas.length+' cuota(s) de crédito registradas automáticamente este mes');
+    if(document.getElementById('v-registrar').classList.contains('active')) renderRecientes();
+    if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+  }
+}
+
+/* ============ CATEGORIAS CASA — catálogo de fijos con items estructurados ============ */
+let catEditIdx = null, catEditTipo = 'fijo';
+
+function renderCategorias(){
+  const fijas = CATEGORIAS.filter(c=>c.tipo==='fijo'), variables = CATEGORIAS.filter(c=>c.tipo==='variable');
+  document.getElementById('listaCategoriasFijas').innerHTML = fijas.map(c=>{
+    const idx = CATEGORIAS.indexOf(c);
+    const itemsTxt = (c.items||[]).map(it=>{
+      let s = it.nombre;
+      if(it.montoHabitual) s += ` ($${fmt(it.montoHabitual)})`;
+      if(it.medioPago==='Crédito' && it.nCuotas>0) s += ` [cuota ${it.cuotaActual||0}/${it.nCuotas}]`;
+      return s;
+    }).join(', ');
+    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${itemsTxt||'Sin ítems'}</div></div>
+      <div style="display:flex; gap:6px; flex-shrink:0">
+        <button class="btn-ghost btn-xs" onclick="abrirModalCategoria('fijo', ${idx})">Editar</button>
+        <button class="btn-danger btn-xs" onclick="borrarCategoria(${idx})">✕</button></div></div>`;
+  }).join('') || '<div class="empty">Sin categorías fijas</div>';
+
+  document.getElementById('listaCategoriasVariables').innerHTML = variables.map(c=>{
+    const idx = CATEGORIAS.indexOf(c);
+    return `<div class="cat-row"><div><div>${c.nombre} — presupuesto $${fmt(c.presupuesto||0)}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+      <div style="display:flex; gap:6px; flex-shrink:0">
+        <button class="btn-ghost btn-xs" onclick="abrirModalCategoria('variable', ${idx})">Editar</button>
+        <button class="btn-danger btn-xs" onclick="borrarCategoria(${idx})">✕</button></div></div>`;
+  }).join('') || '<div class="empty">Sin categorías variables</div>';
+}
+
+function abrirModalCategoria(tipo, idx){
+  if(!requiereAdmin()) return;
+  catEditTipo = tipo; catEditIdx = (idx===undefined)?null:idx;
+  document.getElementById('modalCatTitulo').textContent = catEditIdx===null?'Nueva categoría':'Editar categoría';
+  document.getElementById('modalCatNombre').value = catEditIdx===null?'':CATEGORIAS[catEditIdx].nombre;
+  document.getElementById('modalItemsFijo').style.display = tipo==='fijo'?'':'none';
+  document.getElementById('modalItemsVariable').style.display = tipo==='variable'?'':'none';
+
+  if(tipo==='fijo'){
+    document.getElementById('itemsFijoCont').innerHTML='';
+    const items = catEditIdx===null?[]:(CATEGORIAS[catEditIdx].items||[]);
+    if(items.length) items.forEach(it=>agregarItemFijoRow(it)); else agregarItemFijoRow();
+  } else {
+    document.getElementById('modalCatItemsVar').value = catEditIdx===null?'':(CATEGORIAS[catEditIdx].items||[]).join('\n');
+    document.getElementById('modalCatPresupuesto').value = catEditIdx===null?'':(CATEGORIAS[catEditIdx].presupuesto||'');
+  }
+  document.getElementById('modalCategoria').classList.add('active');
+}
+function cerrarModalCategoria(){ document.getElementById('modalCategoria').classList.remove('active'); }
+
+function agregarItemFijoRow(it){
+  it = it || {nombre:'', montoHabitual:'', medioPago:'Débito', nCuotas:'', cuotaActual:0, cuentaDestino:''};
+  const cont = document.getElementById('itemsFijoCont');
+  const row = document.createElement('div');
+  row.className='item-row';
+  row.innerHTML = `
+    <div class="item-row-top">
+      <input class="it-nombre" placeholder="Nombre del ítem" value="${it.nombre||''}">
+      <button class="btn-danger btn-xs" onclick="this.closest('.item-row').remove()">✕</button>
+    </div>
+    <div class="row2">
+      <input class="it-monto" type="number" inputmode="numeric" placeholder="Monto habitual" value="${it.montoHabitual||''}">
+      <select class="it-medio">
+        <option value="Débito" ${it.medioPago==='Débito'?'selected':''}>Débito</option>
+        <option value="Transferencia" ${it.medioPago==='Transferencia'?'selected':''}>Transferencia</option>
+        <option value="Crédito" ${it.medioPago==='Crédito'?'selected':''}>Crédito</option>
+      </select>
+    </div>
+    <div class="row2 credito-fields ${it.medioPago==='Crédito'?'show':''}">
+      <input class="it-cuotas" type="number" placeholder="N° de cuotas" value="${it.nCuotas||''}">
+      <input class="it-cuota-actual" type="number" placeholder="Cuota actual" value="${it.cuotaActual||0}">
+    </div>
+    <label style="margin-top:6px">Cuenta de destino (quién paga esto)</label>
+    <select class="it-cuenta-destino">
+      <option value="">(sin definir)</option>
+      ${CUENTAS.map(c=>`<option value="${nombreCuenta(c)}" ${it.cuentaDestino===nombreCuenta(c)?'selected':''}>${nombreCuenta(c)}</option>`).join('')}
+    </select>`;
+  row.querySelector('.it-medio').onchange = (e)=>{
+    row.querySelector('.credito-fields').classList.toggle('show', e.target.value==='Crédito');
+  };
+  cont.appendChild(row);
+}
+
+function guardarModalCategoria(){
+  const nombre = document.getElementById('modalCatNombre').value.trim();
+  if(!nombre){ toast('Falta el nombre'); return; }
+  let nueva;
+  if(catEditTipo==='fijo'){
+    const items = [...document.querySelectorAll('#itemsFijoCont .item-row')].map(row=>({
+      nombre: row.querySelector('.it-nombre').value.trim(),
+      montoHabitual: parseFloat(row.querySelector('.it-monto').value)||0,
+      medioPago: row.querySelector('.it-medio').value,
+      nCuotas: parseFloat(row.querySelector('.it-cuotas').value)||0,
+      cuotaActual: parseFloat(row.querySelector('.it-cuota-actual').value)||0,
+      cuentaDestino: row.querySelector('.it-cuenta-destino').value,
+    })).filter(it=>it.nombre);
+    nueva = {tipo:'fijo', nombre, items};
+  } else {
+    const items = document.getElementById('modalCatItemsVar').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    nueva = {tipo:'variable', nombre, items, presupuesto: parseFloat(document.getElementById('modalCatPresupuesto').value)||0};
+  }
+  ELIMINADOS.cats = ELIMINADOS.cats.filter(k=>k!==nueva.tipo+'||'+nueva.nombre);
+  if(catEditIdx===null) CATEGORIAS.push(nueva); else CATEGORIAS[catEditIdx]=nueva;
+  persist();
+  sync('categorias', CATEGORIAS.filter(c=>c.tipo!=='variable'));
+  sync('presupuestos', CATEGORIAS.filter(c=>c.tipo==='variable').map(c=>({categoria:c.nombre, monto:c.presupuesto||0})));
+  cerrarModalCategoria(); renderCategorias(); toast('Categoría guardada');
+}
+function borrarCategoria(idx){
+  if(!requiereAdmin()) return;
+  if(!confirm('¿Eliminar categoría "'+CATEGORIAS[idx].nombre+'"?')) return;
+  const borrada = CATEGORIAS.splice(idx,1)[0];
+  ELIMINADOS.cats.push(borrada.tipo+'||'+borrada.nombre);
+  persist(); renderCategorias();
+  sync('categorias', CATEGORIAS.filter(c=>c.tipo!=='variable'));
+  sync('presupuestos', CATEGORIAS.filter(c=>c.tipo==='variable').map(c=>({categoria:c.nombre, monto:c.presupuesto||0})));
+}
+function guardarConfigNombres(){
+  CONFIG.p1 = document.getElementById('cfgP1').value.trim()||'Persona 1';
+  CONFIG.p2 = document.getElementById('cfgP2').value.trim()||'Persona 2';
+  persist();
+  document.getElementById('movPersonaToggle').children[0].textContent = CONFIG.p1;
+  document.getElementById('movPersonaToggle').children[1].textContent = CONFIG.p2;
+}
+
+/* ============ PERSONAL: registrar ============ */
+function poblarSelectCategoriaP(){
+  const sel = document.getElementById('pCategoria');
+  const lista = CATEGORIAS_P.filter(c=>c.tipo===movTipoSelP);
+  sel.innerHTML = lista.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  poblarItemSelectP();
+}
+function poblarItemSelectP(){
+  const cat = CATEGORIAS_P.find(c=>c.nombre===document.getElementById('pCategoria').value);
+  const sel = document.getElementById('pItemSelect');
+  sel.innerHTML = (cat && cat.items ? cat.items:[]).map(i=>`<option value="${i}">${i}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+  sel.onchange = ()=>{ document.getElementById('pItemOtroWrap').style.display = sel.value==='__otro__'?'':'none'; };
+  sel.onchange();
+}
+
+function guardarMovimientoPersonal(){
+  const monto = parseFloat(document.getElementById('pMonto').value);
+  if(!monto || monto<=0){ toast('Falta el monto'); return; }
+  const fecha = document.getElementById('pFecha').value || fechaLocalISO();
+  const d = new Date(fecha+'T00:00:00');
+  const categoria = document.getElementById('pCategoria').value;
+  const selVal = document.getElementById('pItemSelect').value;
+  const item = selVal==='__otro__' ? document.getElementById('pItemOtro').value.trim() : selVal;
+  if(!item){ toast('Falta el ítem'); return; }
+  const persona = movPersonaSelP==='p1' ? CONFIG.p1 : CONFIG.p2;
+
+  const m = {id:'p'+Date.now()+Math.floor(Math.random()*1000), tipoMovimiento:movTipoSelP, fecha, mes:d.getMonth(), anio:d.getFullYear(),
+    categoria, item, monto, persona, notas:document.getElementById('pNotas').value.trim()};
+  PMOVS.push(m); persist();
+  sync('personal_movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona, notas:m.notas});
+
+  document.getElementById('pMonto').value=''; document.getElementById('pItemOtro').value=''; document.getElementById('pNotas').value='';
+  toast(mensajeGuardado()); renderRecientesP();
+}
+
+function renderRecientesP(){
+  hoy = new Date();
+  document.getElementById('mesRegistrarLabelP').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
+  const delMes = PMOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,8);
+  const cont = document.getElementById('listaRecientesP');
+  if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
+  cont.innerHTML = delMes.map(m=>`
+    <div class="gasto-item" onclick="abrirModalEditarP('${m.id}')" style="cursor:pointer">
+      <div><div>${m.item} <span class="tag ${m.tipoMovimiento==='ingreso'?'ingreso':''}">${m.tipoMovimiento==='ingreso'?'Ingreso':'Gasto'}</span></div>
+      <div class="meta">${m.persona?m.persona+' · ':''}${m.categoria}</div></div><div class="monto">$${fmt(m.monto)}<button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoPersonalDirecto('${m.id}')">✕</button></div></div>`).join('');
+}
+
+function eliminarMovimientoPersonalDirecto(id){
+  if(!confirm('¿Eliminar este movimiento? No se puede deshacer.')) return;
+  PMOVS = PMOVS.filter(x=>x.id!==id);
+  ELIMINADOS.ids.push(id);
+  sync('eliminar_personal_movimiento', {id});
+  persist();
+  toast('Movimiento eliminado');
+  renderRecientesP();
+  if(document.getElementById('v-resultados').classList.contains('active')) renderResultados();
+}
+
+/* ============ EDITAR / ELIMINAR MOVIMIENTO (PERSONAL) ============ */
+let editandoIdP = null;
+function abrirModalEditarP(id){
+  const m = PMOVS.find(x=>x.id===id);
+  if(!m) return;
+  editandoIdP = id;
+  document.getElementById('editPCategoria').value = m.categoria;
+  document.getElementById('editPItem').value = m.item;
+  document.getElementById('editPMonto').value = m.monto;
+  document.getElementById('editPFecha').value = m.fecha;
+  document.getElementById('editPNotas').value = m.notas||'';
+  document.getElementById('editPPersonaToggle').children[0].textContent = CONFIG.p1;
+  document.getElementById('editPPersonaToggle').children[1].textContent = CONFIG.p2;
+  [...document.getElementById('editPPersonaToggle').children].forEach(b=>{
+    b.classList.toggle('active', (b.dataset.v==='p1'?CONFIG.p1:CONFIG.p2)===m.persona);
+    b.onclick = ()=>{ [...document.getElementById('editPPersonaToggle').children].forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  document.getElementById('modalEditarP').classList.add('active');
+}
+function cerrarModalEditarP(){ document.getElementById('modalEditarP').classList.remove('active'); editandoIdP=null; }
+
+function guardarEdicionMovimientoPersonal(){
+  const m = PMOVS.find(x=>x.id===editandoIdP);
+  if(!m) return;
+  m.categoria = document.getElementById('editPCategoria').value.trim();
+  m.item = document.getElementById('editPItem').value.trim();
+  m.monto = parseFloat(document.getElementById('editPMonto').value) || m.monto;
+  m.fecha = document.getElementById('editPFecha').value || m.fecha;
+  const d = new Date(m.fecha+'T00:00:00'); m.mes = d.getMonth(); m.anio = d.getFullYear();
+  m.notas = document.getElementById('editPNotas').value.trim();
+  const activo = [...document.getElementById('editPPersonaToggle').children].find(b=>b.classList.contains('active'));
+  if(activo) m.persona = activo.dataset.v==='p1' ? CONFIG.p1 : CONFIG.p2;
+  persist();
+  sync('personal_movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona, notas:m.notas});
+  cerrarModalEditarP();
+  toast('Movimiento actualizado');
+  renderRecientesP();
+  if(document.getElementById('v-resultados').classList.contains('active')) renderResultados();
+}
+
+function eliminarMovimientoPersonalActual(){
+  if(!confirm('¿Eliminar este movimiento? No se puede deshacer.')) return;
+  PMOVS = PMOVS.filter(x=>x.id!==editandoIdP);
+  ELIMINADOS.ids.push(editandoIdP);
+  sync('eliminar_personal_movimiento', {id:editandoIdP});
+  persist();
+  cerrarModalEditarP();
+  toast('Movimiento eliminado');
+  renderRecientesP();
+  if(document.getElementById('v-resultados').classList.contains('active')) renderResultados();
+}
+
+/* ============ PERSONAL: estado de resultados ============ */
+function cambiarMesP(delta){ vistaMesP+=delta; if(vistaMesP<0){vistaMesP=11; vistaAnioP--;} if(vistaMesP>11){vistaMesP=0; vistaAnioP++;} renderResultados(); }
+
+function renderResultados(){
+  document.getElementById('balanceMesLabelP').textContent = MESES[vistaMesP]+' '+vistaAnioP;
+  const delMes = PMOVS.filter(m=>m.mes===vistaMesP && m.anio===vistaAnioP);
+  const ingresos = delMes.filter(m=>m.tipoMovimiento==='ingreso');
+  const gastos = delMes.filter(m=>m.tipoMovimiento==='gasto');
+  const totalIng = ingresos.reduce((s,m)=>s+m.monto,0);
+  const totalGas = gastos.reduce((s,m)=>s+m.monto,0);
+  const resultado = totalIng - totalGas;
+
+  document.getElementById('resultadoResumen').innerHTML = `
+    <div class="balance-num ${resultado>=0?'positivo':'negativo'}">$${fmt(resultado)}</div>
+    <div class="balance-sub">${resultado>=0?'Resultado positivo':'Resultado negativo'} del mes</div>
+    <div class="pl-total"><span>Ingresos</span><span>$${fmt(totalIng)}</span></div>
+    <div class="pl-total"><span>Gastos</span><span>$${fmt(totalGas)}</span></div>
+    <div style="margin-top:10px">
+      <div class="split-row"><span>Ingresos — ${CONFIG.p1}</span><span>$${fmt(ingresos.filter(m=>m.persona===CONFIG.p1).reduce((s,m)=>s+m.monto,0))}</span></div>
+      <div class="split-row"><span>Ingresos — ${CONFIG.p2}</span><span>$${fmt(ingresos.filter(m=>m.persona===CONFIG.p2).reduce((s,m)=>s+m.monto,0))}</span></div>
+      <div class="split-row"><span>Gastos — ${CONFIG.p1}</span><span>$${fmt(gastos.filter(m=>m.persona===CONFIG.p1).reduce((s,m)=>s+m.monto,0))}</span></div>
+      <div class="split-row"><span>Gastos — ${CONFIG.p2}</span><span>$${fmt(gastos.filter(m=>m.persona===CONFIG.p2).reduce((s,m)=>s+m.monto,0))}</span></div>
+    </div>`;
+
+  document.getElementById('listaIngresos').innerHTML = agruparPorCategoria(ingresos) || '<div class="empty">Sin ingresos este mes</div>';
+  document.getElementById('listaGastosP').innerHTML = agruparPorCategoria(gastos) || '<div class="empty">Sin gastos este mes</div>';
+}
+
+function agruparPorCategoria(lista){
+  if(!lista.length) return '';
+  const porCat = {};
+  lista.forEach(m=>{ porCat[m.categoria] = (porCat[m.categoria]||0) + m.monto; });
+  return Object.entries(porCat).map(([cat,monto])=>`<div class="split-row"><span>${cat}</span><span>$${fmt(monto)}</span></div>`).join('');
+}
+
+/* ============ PERSONAL: categorías ============ */
+let catEditIdxP = null, catEditTipoP = 'ingreso';
+function renderCategoriasP(){
+  const ing = CATEGORIAS_P.filter(c=>c.tipo==='ingreso'), gas = CATEGORIAS_P.filter(c=>c.tipo==='gasto');
+  document.getElementById('listaCatIngreso').innerHTML = ing.map(c=>{
+    const idx = CATEGORIAS_P.indexOf(c);
+    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+      <div style="display:flex; gap:6px"><button class="btn-ghost btn-xs" onclick="abrirModalCategoriaP('ingreso', ${idx})">Editar</button>
+      <button class="btn-danger btn-xs" onclick="borrarCategoriaP(${idx})">✕</button></div></div>`;
+  }).join('') || '<div class="empty">Sin categorías</div>';
+  document.getElementById('listaCatGastoP').innerHTML = gas.map(c=>{
+    const idx = CATEGORIAS_P.indexOf(c);
+    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+      <div style="display:flex; gap:6px"><button class="btn-ghost btn-xs" onclick="abrirModalCategoriaP('gasto', ${idx})">Editar</button>
+      <button class="btn-danger btn-xs" onclick="borrarCategoriaP(${idx})">✕</button></div></div>`;
+  }).join('') || '<div class="empty">Sin categorías</div>';
+}
+function abrirModalCategoriaP(tipo, idx){
+  catEditTipoP = tipo; catEditIdxP = (idx===undefined)?null:idx;
+  document.getElementById('modalCatTituloP').textContent = catEditIdxP===null?'Nueva categoría':'Editar categoría';
+  document.getElementById('modalCatNombreP').value = catEditIdxP===null?'':CATEGORIAS_P[catEditIdxP].nombre;
+  document.getElementById('modalCatItemsP').value = catEditIdxP===null?'':(CATEGORIAS_P[catEditIdxP].items||[]).join('\n');
+  document.getElementById('modalCategoriaP').classList.add('active');
+}
+function cerrarModalCategoriaP(){ document.getElementById('modalCategoriaP').classList.remove('active'); }
+function guardarModalCategoriaP(){
+  const nombre = document.getElementById('modalCatNombreP').value.trim();
+  if(!nombre){ toast('Falta el nombre'); return; }
+  const items = document.getElementById('modalCatItemsP').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const nueva = {tipo:catEditTipoP, nombre, items};
+  ELIMINADOS.catsP = ELIMINADOS.catsP.filter(k=>k!==nueva.tipo+'||'+nueva.nombre);
+  if(catEditIdxP===null) CATEGORIAS_P.push(nueva); else CATEGORIAS_P[catEditIdxP]=nueva;
+  persist(); poblarSelectCategoriaP();
+  sync('personal_categorias', CATEGORIAS_P);
+  cerrarModalCategoriaP(); renderCategoriasP(); toast('Categoría guardada');
+}
+function borrarCategoriaP(idx){
+  if(!confirm('¿Eliminar categoría "'+CATEGORIAS_P[idx].nombre+'"?')) return;
+  const borradaP = CATEGORIAS_P.splice(idx,1)[0];
+  ELIMINADOS.catsP.push(borradaP.tipo+'||'+borradaP.nombre);
+  persist(); renderCategoriasP(); poblarSelectCategoriaP();
+  sync('personal_categorias', CATEGORIAS_P);
+}
+
+/* ============ IMPORTAR EXTRACTO BANCARIO (CSV) ============ */
+let csvPersonaSel = 'p1';
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.querySelectorAll('#csvPersonaToggle button').forEach(b=>{
+    b.textContent = b.dataset.v==='p1' ? CONFIG.p1 : CONFIG.p2;
+    b.onclick = ()=>{ csvPersonaSel=b.dataset.v; document.querySelectorAll('#csvPersonaToggle button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+  });
+  const inp = document.getElementById('csvBancoFile');
+  if(inp) inp.onchange = importarCSVBancario;
+});
+
+// Hash simple y estable — mismo contenido siempre da el mismo ID, así una transacción
+// que aparece en dos extractos con fechas traslapadas no se duplica.
+function hashEstable(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (Math.imul(31,h) + str.charCodeAt(i))|0; }
+  return 'csv'+Math.abs(h);
+}
+
+function parsearCSV(texto){
+  const delim = (texto.split('\n')[0].split(';').length > texto.split('\n')[0].split(',').length) ? ';' : ',';
+  const lineas = texto.split(/\r?\n/).filter(l=>l.trim().length);
+  const parseLinea = (linea)=>{
+    const out = []; let cur=''; let enComillas=false;
+    for(let i=0;i<linea.length;i++){
+      const ch = linea[i];
+      if(ch==='"'){ enComillas = !enComillas; continue; }
+      if(ch===delim && !enComillas){ out.push(cur); cur=''; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out.map(s=>s.trim());
+  };
+  return lineas.map(parseLinea);
+}
+
+function importarCSVBancario(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const cuentaNombre = document.getElementById('csvCuentaNombre').value.trim();
+  if(!cuentaNombre){ toast('Ponle un nombre a la cuenta primero'); e.target.value=''; return; }
+  const persona = csvPersonaSel==='p1' ? CONFIG.p1 : CONFIG.p2;
+
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    const filas = parsearCSV(ev.target.result);
+    if(filas.length < 2){ toast('El archivo parece vacío'); return; }
+    const headers = filas[0].map(h=>h.toLowerCase());
+    const idxFecha = headers.findIndex(h=>/fecha|date/.test(h));
+    const idxDesc = headers.findIndex(h=>/descrip|glosa|detalle|concepto/.test(h));
+    const idxCargo = headers.findIndex(h=>/cargo|debito|débito/.test(h));
+    const idxMontoGenerico = headers.findIndex(h=>/monto|valor|importe/.test(h));
+    const idxMonto = idxCargo>=0 ? idxCargo : idxMontoGenerico;
+
+    if(idxFecha<0 || idxMonto<0){
+      document.getElementById('csvResumen').textContent = 'No reconocí las columnas de fecha/monto — revisa que el CSV tenga encabezados tipo "Fecha" y "Cargo"/"Monto".';
+      toast('Formato no reconocido');
+      return;
+    }
+
+    // Crea la categoría de destino si no existe
+    if(!CATEGORIAS.find(c=>c.nombre==='Extracto Bancario - Sin Clasificar')){
+      CATEGORIAS.push({tipo:'fijo', nombre:'Extracto Bancario - Sin Clasificar', items:[]});
+    }
+
+    const idsExistentes = new Set(MOVS.map(m=>m.id));
+    let nuevos = 0, duplicados = 0, saltados = 0;
+
+    filas.slice(1).forEach(fila=>{
+      const fechaRaw = fila[idxFecha];
+      const montoRaw = fila[idxMonto];
+      const desc = idxDesc>=0 ? fila[idxDesc] : 'Movimiento importado';
+      if(!fechaRaw || !montoRaw){ saltados++; return; }
+      const monto = Math.abs(parseFloat(montoRaw.replace(/\./g,'').replace(',','.')));
+      if(!monto || monto<=0){ saltados++; return; }
+
+      // normaliza fecha a YYYY-MM-DD si viene DD-MM-YYYY o DD/MM/YYYY
+      let fecha = fechaRaw;
+      const m1 = fechaRaw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if(m1){ const yyyy = m1[3].length===2?'20'+m1[3]:m1[3]; fecha = `${yyyy}-${m1[2].padStart(2,'0')}-${m1[1].padStart(2,'0')}`; }
+      const d = new Date(fecha+'T00:00:00');
+      if(isNaN(d.getTime())){ saltados++; return; }
+
+      const id = hashEstable(fecha+'|'+desc+'|'+monto);
+      if(idsExistentes.has(id)){ duplicados++; return; }
+
+      const m = { id, tipoMovimiento:'cuenta', fecha, mes:d.getMonth(), anio:d.getFullYear(),
+        categoria:'Extracto Bancario - Sin Clasificar', item:desc.slice(0,60)||'Movimiento', monto, persona,
+        notas:'Importado de extracto — '+cuentaNombre, fotoLocal:null, tieneFotos:false,
+        pagado:true, fechaPago:d.toISOString(), cuentaOrigen:cuentaNombre };
+      MOVS.push(m);
+      idsExistentes.add(id);
+      PENDIENTES.push({accion:'movimiento', data:{id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona, notas:m.notas, tieneFotos:false, pagado:true, fechaPago:m.fechaPago, cuentaOrigen:m.cuentaOrigen}});
+      nuevos++;
+    });
+
+    persist();
+    sync('categorias', CATEGORIAS.filter(c=>c.tipo!=='variable'));
+    renderSyncEstado();
+    document.getElementById('csvResumen').textContent = `${nuevos} nuevo(s) importado(s), ${duplicados} ya existían (no se duplicaron), ${saltados} fila(s) sin datos válidos. Quedaron como "Cuenta a devolver" de ${persona} en la categoría "Extracto Bancario - Sin Clasificar" — reclasifícalos si en realidad son gasto fijo o variable compartido. Usa "Reintentar sincronización" para subirlos.`;
+    toast(nuevos+' movimientos importados del extracto');
+    renderRecientes();
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ============ EXPORTAR CSV ============ */
+function exportarMovimientosCSV(){
+  const headers = ['ID','Tipo','Fecha','Categoria','Item','Monto','Persona','Pagado','FechaPago','CuentaOrigen','Notas'];
+  const filas = MOVS.map(m=>[m.id, TIPO_LABEL[m.tipoMovimiento]||m.tipoMovimiento, m.fecha, m.categoria, m.item, m.monto, m.persona||'', m.pagado?'SI':'NO', m.fechaPago||'', m.cuentaOrigen||'', (m.notas||'').replace(/[\n,]/g,' ')]);
+  const csv = [headers, ...filas].map(f=>f.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gastoscasa_movimientos_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+async function resincronizarTodoCasa(){
+  if(!requiereAdmin()) return;
+  if(!SHEETS_URL){ toast('Falta configurar la URL de Google Sheets arriba'); return; }
+  if(!confirm('Esto reenvía TODOS los movimientos guardados en este celular (' + MOVS.length + ' en total) al Sheet, en lotes ordenados. Si ya borraste la hoja "Movimientos" en Google Sheets, dale que sí. ¿Continuar?')) return;
+
+  toast('Reenviando '+MOVS.length+' movimientos — no cierres la app, puede tardar');
+  const TAMAÑO_LOTE = 150;
+  for(let i=0; i<MOVS.length; i+=TAMAÑO_LOTE){
+    const lote = MOVS.slice(i, i+TAMAÑO_LOTE).map(m=>({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas||'', tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''}));
+    try{
+      await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:'movimientos_batch', data:lote})});
+    } catch(err){ /* si un lote falla por red, no hay retry automático aquí — vuelve a tocar el botón */ }
+  }
+  // Re-envía también el resto del estado (catálogo, cuentas, perfiles, cuotas, presupuestos)
+  sync('categorias', CATEGORIAS.filter(c=>c.tipo!=='variable'));
+  sync('presupuestos', CATEGORIAS.filter(c=>c.tipo==='variable').map(c=>({categoria:c.nombre, monto:c.presupuesto||0})));
+  sync('cuotas', CUOTAS);
+  sync('perfiles', PERFILES);
+  sync('cuentas', CUENTAS.map(c=>({nombre:nombreCuenta(c), dueño:dueñoCuenta(c)})));
+  toast('Reenvío completo — revisa el Sheet en unos segundos');
+}
+
+/* ============ RESPALDO / IMPORTACIÓN HISTÓRICA ============ */
+function exportarRespaldo(){
+  const respaldo = {version:'v5', exportadoEl:new Date().toISOString(), MOVS, CATEGORIAS, CIERRES, CONFIG, PMOVS, CATEGORIAS_P, CUOTAS, PERFILES, CUENTAS};
+  const blob = new Blob([JSON.stringify(respaldo, null, 1)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gastoscasa_respaldo_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const inp = document.getElementById('importFile');
+  if(inp) inp.onchange = importarHistorico;
+});
+
+function importarHistorico(e){
+  if(!requiereAdmin()){ e.target.value=''; return; }
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    let data;
+    try{ data = JSON.parse(ev.target.result); } catch(err){ toast('Archivo inválido'); return; }
+    // Acepta tanto un array de movimientos suelto como un respaldo completo {MOVS:[...]}.
+    const lista = Array.isArray(data) ? data : (data.MOVS || []);
+    const hayExtras = !Array.isArray(data) && ['PMOVS','CUOTAS','CUENTAS','CIERRES','PERFILES'].some(k=>Array.isArray(data[k]) && data[k].length);
+    if(!lista.length && !hayExtras && !(data.CATEGORIAS_UPDATE && data.CATEGORIAS_UPDATE.length)){ toast('No se encontró nada para importar'); return; }
+
+    const idsExistentes = new Set(MOVS.map(m=>m.id));
+    let nuevos = 0, categoriasNuevas = new Set(), montosActualizados = 0;
+
+    if(data.CATEGORIAS_UPDATE && Array.isArray(data.CATEGORIAS_UPDATE)){
+      data.CATEGORIAS_UPDATE.forEach(u=>{
+        CATEGORIAS.forEach(cat=>{
+          if(cat.tipo!=='fijo') return;
+          (cat.items||[]).forEach(it=>{
+            if(it.nombre && it.nombre.toLowerCase()===u.item.toLowerCase() && (!it.montoHabitual || it.montoHabitual===0)){
+              it.montoHabitual = u.montoHabitual;
+              montosActualizados++;
+            }
+          });
+        });
+      });
+    }
+
+    lista.forEach(m=>{
+      if(!m.id || idsExistentes.has(m.id)) return;
+      MOVS.push(m);
+      idsExistentes.add(m.id);
+      nuevos++;
+      if(m.categoria && !CATEGORIAS.find(c=>c.nombre===m.categoria)) categoriasNuevas.add(m.categoria);
+      PENDIENTES.push({accion:'movimiento', data:{id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas||'', tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''}});
+    });
+
+    // Resto del respaldo (solo agrega lo que falta, nunca pisa lo local).
+    let extras = 0;
+    if(!Array.isArray(data)){
+      const idsP = new Set(PMOVS.map(x=>x.id));
+      (data.PMOVS||[]).forEach(p=>{
+        if(!p.id || idsP.has(p.id)) return;
+        PMOVS.push(p); idsP.add(p.id); extras++;
+        PENDIENTES.push({accion:'personal_movimiento', data:{id:p.id, tipoMovimiento:p.tipoMovimiento, fecha:p.fecha, mes:MESES[p.mes], anio:p.anio, categoria:p.categoria, item:p.item, monto:p.monto, persona:p.persona, notas:p.notas||''}});
+      });
+      (data.CUOTAS||[]).forEach(c=>{ if(c.id && !CUOTAS.some(x=>x.id===c.id)){ CUOTAS.push(c); extras++; } });
+      (data.CUENTAS||[]).forEach(c=>{ if(!CUENTAS.some(x=>nombreCuenta(x)===nombreCuenta(c))){ CUENTAS.push(c); extras++; } });
+      (data.CIERRES||[]).forEach(c=>{ if(!CIERRES.some(x=>x.mes===c.mes && x.anio===c.anio)){ CIERRES.push(c); extras++; } });
+      (data.PERFILES||[]).forEach(p=>{ if(p.nombre && !PERFILES.some(x=>x.nombre===p.nombre)){ PERFILES.push(p); extras++; } });
+      if(extras){
+        sync('cuotas', CUOTAS); sync('perfiles', PERFILES);
+        sync('cuentas', CUENTAS.map(c=>({nombre:nombreCuenta(c), dueño:dueñoCuenta(c)})));
+      }
+    }
+
+    // Si vienen categorías nuevas (ej. "Histórico - Sin clasificar") que no existen en el catálogo, se crean vacías para que no queden huérfanas.
+    categoriasNuevas.forEach(nombre=>{
+      CATEGORIAS.push({tipo:'fijo', nombre, items:[]});
+    });
+
+    persist();
+    renderSyncEstado();
+    document.getElementById('importResumen').textContent = `${nuevos} movimiento(s) nuevo(s) importado(s)${categoriasNuevas.size ? ', '+categoriasNuevas.size+' categoría(s) nueva(s) creada(s)' : ''}${montosActualizados ? ', '+montosActualizados+' monto(s) habitual(es) del catálogo actualizados' : ''}${extras ? ', '+extras+' registro(s) extra (personal, cuotas, cuentas, cierres, perfiles)' : ''}. Quedaron en cola de sincronización — usa "Reintentar sincronización pendiente" para subirlos a Sheets (puede tardar si son muchos).`;
+    toast(nuevos+' movimientos importados');
+    renderCategorias();
+  };
+  reader.readAsText(file);
+}
+
+/* ============ CARGA RÁPIDA DE FIJOS ============ */
+function abrirCargaFijos(){
+  hoy = new Date();
+  document.getElementById('cargaFijosFecha').value = fechaLocalISO();
+  const hoyMes = hoy.getMonth(), hoyAnio = hoy.getFullYear();
+  const yaRegistradosFijos = new Set(
+    MOVS.filter(m=>m.tipoMovimiento==='fijo' && m.mes===hoyMes && m.anio===hoyAnio).map(m=>m.categoria+'||'+m.item)
+  );
+  const yaRegistradosVar = new Set(
+    MOVS.filter(m=>m.tipoMovimiento==='variable' && m.mes===hoyMes && m.anio===hoyAnio).map(m=>m.categoria+'||'+m.item)
+  );
+  const cont = document.getElementById('cargaFijosCont');
+  cont.innerHTML = '';
+
+  const labelFijos = document.createElement('div');
+  labelFijos.className = 'section-label';
+  labelFijos.textContent = 'Gastos fijos';
+  cont.appendChild(labelFijos);
+  CATEGORIAS.filter(c=>c.tipo==='fijo').forEach(cat=>{
+    if(!cat.items || !cat.items.length) return;
+    const label = document.createElement('div');
+    label.className = 'section-label';
+    label.textContent = cat.nombre;
+    cont.appendChild(label);
+    cat.items.forEach(it=>{
+      const key = cat.nombre+'||'+it.nombre;
+      const yaEsteMs = yaRegistradosFijos.has(key);
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.dataset.tipo = 'fijo';
+      row.dataset.categoria = cat.nombre;
+      row.dataset.item = it.nombre;
+      const cuotaTxt = (it.medioPago==='Crédito' && it.nCuotas>0) ? ` · cuota ${Math.min((it.cuotaActual||0)+1, it.nCuotas)}/${it.nCuotas}` : '';
+      row.innerHTML = `
+        <div class="item-row-top">
+          <label style="display:flex; align-items:center; gap:8px; flex:1; margin:0; color:var(--text); font-size:.92rem">
+            <input type="checkbox" class="cf-check" style="width:auto" ${yaEsteMs?'':'checked'}>
+            ${it.nombre}${yaEsteMs?' <span class=\"tag\" style=\"margin-left:6px\">Ya registrado este mes</span>':''}
+          </label>
+        </div>
+        <div class="row2">
+          <input class="cf-monto" type="number" inputmode="numeric" value="${it.montoHabitual||0}">
+          <div class="cuota-badge" style="align-self:center">${cuotaTxt}</div>
+        </div>`;
+      cont.appendChild(row);
+    });
+  });
+
+  const variables = CATEGORIAS.filter(c=>c.tipo==='variable');
+  if(variables.length){
+    const labelVar = document.createElement('div');
+    labelVar.className = 'section-label';
+    labelVar.textContent = 'Presupuestos variables del mes';
+    cont.appendChild(labelVar);
+    variables.forEach(cat=>{
+      const itemNombre = (cat.items && cat.items.length) ? cat.nombre : cat.nombre; // usa el nombre de la categoría como ítem del presupuesto mensual
+      const key = cat.nombre+'||'+itemNombre;
+      const yaEsteMs = yaRegistradosVar.has(key);
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.dataset.tipo = 'variable';
+      row.dataset.categoria = cat.nombre;
+      row.dataset.item = itemNombre;
+      row.innerHTML = `
+        <div class="item-row-top">
+          <label style="display:flex; align-items:center; gap:8px; flex:1; margin:0; color:var(--text); font-size:.92rem">
+            <input type="checkbox" class="cf-check" style="width:auto" ${yaEsteMs?'':'checked'}>
+            ${cat.nombre} (presupuesto)${yaEsteMs?' <span class=\"tag\" style=\"margin-left:6px\">Ya registrado este mes</span>':''}
+          </label>
+        </div>
+        <div class="row2">
+          <input class="cf-monto" type="number" inputmode="numeric" value="${cat.presupuesto||0}">
+          <div class="cuota-badge" style="align-self:center">Presupuesto: $${fmt(cat.presupuesto||0)}</div>
+        </div>`;
+      cont.appendChild(row);
+    });
+  }
+
+  document.getElementById('modalCargaFijos').classList.add('active');
+}
+function cerrarCargaFijos(){ document.getElementById('modalCargaFijos').classList.remove('active'); }
+
+function guardarCargaFijos(){
+  const fecha = document.getElementById('cargaFijosFecha').value || fechaLocalISO();
+  const d = new Date(fecha+'T00:00:00');
+  const filas = [...document.querySelectorAll('#cargaFijosCont .item-row')];
+  let guardados = 0;
+
+  filas.forEach(row=>{
+    const check = row.querySelector('.cf-check');
+    if(!check.checked) return;
+    const monto = parseFloat(row.querySelector('.cf-monto').value);
+    if(!monto || monto<=0) return;
+    const categoria = row.dataset.categoria, item = row.dataset.item, tipo = row.dataset.tipo || 'fijo';
+    let cuentaDestino = '';
+    if(tipo==='fijo'){
+      const catLookup = CATEGORIAS.find(c=>c.nombre===categoria);
+      const itLookup = catLookup && (catLookup.items||[]).find(i=>i.nombre===item);
+      cuentaDestino = itLookup ? (itLookup.cuentaDestino||'') : '';
+    }
+
+    const m = { id:'m'+Date.now()+Math.floor(Math.random()*1000)+guardados, tipoMovimiento:tipo, fecha, mes:d.getMonth(), anio:d.getFullYear(),
+      categoria, item, monto, persona:'', notas:'', fotoLocal:null, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:cuentaDestino };
+    MOVS.push(m);
+    sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
+
+    if(tipo==='fijo'){
+      const cat = CATEGORIAS.find(c=>c.nombre===categoria);
+      const it = cat && (cat.items||[]).find(i=>i.nombre===item);
+      if(it && it.medioPago==='Crédito' && it.nCuotas>0 && it.cuotaActual < it.nCuotas) it.cuotaActual = (it.cuotaActual||0)+1;
+    }
+
+    guardados++;
+  });
+
+  if(guardados){ persist(); sync('categorias', CATEGORIAS.filter(c=>c.tipo==='fijo')); }
+  cerrarCargaFijos();
+  toast(guardados+' movimientos guardados'+(SHEETS_URL?' y enviados a Sheets':' (solo local, sin URL de Sheets configurada)'));
+  renderRecientes();
+}
+
+/* ============ ANÁLISIS Y RECOMENDACIONES (CASA) ============ */
+function ultimosNMeses(n){
+  const lista = [];
+  let m = hoy.getMonth(), a = hoy.getFullYear();
+  for(let i=0;i<n;i++){ lista.unshift({mes:m, anio:a}); m--; if(m<0){m=11; a--;} }
+  return lista;
+}
+
+function renderAnalisisCasa(){
+  const meses = ultimosNMeses(6);
+  const totales = meses.map(({mes,anio})=>{
+    const delMes = MOVS.filter(m=>m.mes===mes && m.anio===anio && m.tipoMovimiento!=='aporte');
+    return {mes, anio, total: delMes.reduce((s,m)=>s+m.monto,0)};
+  });
+  const max = Math.max(...totales.map(t=>t.total), 1);
+  document.getElementById('analisisTendenciaCasa').innerHTML = totales.map(t=>`
+    <div class="presu-row"><div class="presu-top"><span>${MESES[t.mes].slice(0,3)} ${t.anio}</span><span>$${fmt(t.total)}</span></div>
+    <div class="progress"><div class="progress-fill" style="width:${t.total/max*100}%"></div></div></div>`).join('') || '<div class="empty">Sin datos suficientes</div>';
+
+  // Sobregasto promedio por categoría variable, sobre los últimos 6 meses con datos
+  const variables = CATEGORIAS.filter(c=>c.tipo==='variable');
+  const sobregastos = variables.map(c=>{
+    const valores = meses.map(({mes,anio})=>{
+      const gastado = MOVS.filter(m=>m.mes===mes && m.anio===anio && m.tipoMovimiento==='variable' && m.categoria===c.nombre).reduce((s,m)=>s+m.monto,0);
+      return gastado - (c.presupuesto||0);
+    }).filter((v,i)=> {
+      const {mes,anio} = meses[i];
+      return MOVS.some(m=>m.mes===mes && m.anio===anio && m.tipoMovimiento==='variable' && m.categoria===c.nombre);
+    });
+    const promedio = valores.length ? valores.reduce((a,b)=>a+b,0)/valores.length : 0;
+    return {nombre:c.nombre, promedio, mesesConDatos:valores.length};
+  }).filter(s=>s.mesesConDatos>0);
+
+  document.getElementById('analisisPresupuestosCasa').innerHTML = sobregastos.length ? sobregastos.map(s=>`
+    <div class="split-row"><span>${s.nombre}</span><span style="color:${s.promedio>0?'var(--debe)':'var(--favor)'}">${s.promedio>=0?'+':''}$${fmt(s.promedio)}/mes</span></div>`).join('')
+    : '<div class="empty">Sin categorías variables con historial</div>';
+
+  // Cuentas por cobrar acumuladas histórico total
+  const cuentaP1Total = MOVS.filter(m=>m.tipoMovimiento==='cuenta' && m.persona===CONFIG.p1).reduce((s,m)=>s+m.monto,0);
+  const cuentaP2Total = MOVS.filter(m=>m.tipoMovimiento==='cuenta' && m.persona===CONFIG.p2).reduce((s,m)=>s+m.monto,0);
+  document.getElementById('analisisCuentasCasa').innerHTML = `
+    <div class="split-row"><span>Total histórico adelantado por ${CONFIG.p1}</span><span>$${fmt(cuentaP1Total)}</span></div>
+    <div class="split-row"><span>Total histórico adelantado por ${CONFIG.p2}</span><span>$${fmt(cuentaP2Total)}</span></div>`;
+
+  // Arrastre histórico — para que una deuda que se arrastra mes a mes no quede invisible
+  const cierresOrdenados = CIERRES.slice().sort((a,b)=> (a.anio-b.anio) || (a.mes-b.mes));
+  document.getElementById('analisisArrastreCasa').innerHTML = cierresOrdenados.length ? cierresOrdenados.map(c=>{
+    const favorC = c.arrastre>=0?CONFIG.p1:CONFIG.p2;
+    return `<div class="split-row"><span>${MESES[c.mes]} ${c.anio}</span><span style="${c.arrastre!==0?'color:var(--warn)':''}">${c.arrastre===0?'Sin arrastre':'$'+fmt(Math.abs(c.arrastre))+' a favor de '+favorC}</span></div>`;
+  }).join('') : '<div class="empty">Sin meses cerrados todavía</div>';
+
+  // Racha de arrastre consecutivo a favor de la misma persona (posible carga silenciosa)
+  let rachaPersona = null, rachaCount = 0, rachaMonto = 0;
+  for(let i=cierresOrdenados.length-1; i>=0; i--){
+    const c = cierresOrdenados[i];
+    if(c.arrastre===0) break;
+    const fav = c.arrastre>=0?CONFIG.p1:CONFIG.p2;
+    if(rachaPersona===null) rachaPersona = fav;
+    if(fav!==rachaPersona) break;
+    rachaCount++; rachaMonto += Math.abs(c.arrastre);
+  }
+
+  // Recomendaciones basadas en reglas simples
+  const recs = [];
+  if(rachaCount>=2){
+    recs.push(`${rachaPersona} lleva ${rachaCount} meses seguidos cerrando con arrastre a su favor (acumulado $${fmt(rachaMonto)}) — esto es exactamente el patrón de "uno está financiando al otro sin que se note". Vale la pena juntarse a liquidar esa diferencia directamente, no solo dejarla rodar.`);
+  }
+  if(sobregastos.some(s=>s.promedio > 0.15*(variables.find(v=>v.nombre===s.nombre)?.presupuesto||1))){
+    const peor = sobregastos.sort((a,b)=>b.promedio-a.promedio)[0];
+    recs.push(`"${peor.nombre}" se sobregasta en promedio $${fmt(peor.promedio)} al mes — considera subir el presupuesto a un monto más realista, o revisar qué está empujando el gasto.`);
+  }
+  if(totales.length>=3){
+    const ultimos3 = totales.slice(-3).map(t=>t.total);
+    const creciente = ultimos3[0] < ultimos3[1] && ultimos3[1] < ultimos3[2];
+    if(creciente) recs.push('El gasto total viene subiendo 3 meses seguidos — vale la pena revisar qué categoría está empujando el alza antes de que se vuelva la nueva normalidad.');
+  }
+  const totalCuentas = cuentaP1Total + cuentaP2Total;
+  if(totalCuentas > 0 && (cuentaP1Total===0 || cuentaP2Total===0)){
+    const quien = cuentaP1Total>cuentaP2Total ? CONFIG.p1 : CONFIG.p2;
+    recs.push(`Todo el historial de "cuenta a devolver" está concentrado en ${quien} — si esto es un patrón real y no casualidad, confirma que el otro también está registrando sus extras y no solo confiando en la memoria.`);
+  }
+  document.getElementById('analisisRecomendacionesCasa').innerHTML = recs.length
+    ? recs.map(r=>`<div class="split-row" style="display:block; padding:10px 0">${r}</div>`).join('')
+    : '<div class="empty">Sin señales relevantes con los datos actuales</div>';
+}
+
+/* ============ ANÁLISIS Y RECOMENDACIONES (PERSONAL) ============ */
+function renderAnalisisPersonal(){
+  const meses = ultimosNMeses(6);
+  const datos = meses.map(({mes,anio})=>{
+    const delMes = PMOVS.filter(m=>m.mes===mes && m.anio===anio);
+    return {
+      mes, anio,
+      ingresos: delMes.filter(m=>m.tipoMovimiento==='ingreso').reduce((s,m)=>s+m.monto,0),
+      gastos: delMes.filter(m=>m.tipoMovimiento==='gasto').reduce((s,m)=>s+m.monto,0),
+    };
+  });
+  const max = Math.max(...datos.map(d=>Math.max(d.ingresos,d.gastos)), 1);
+  document.getElementById('analisisTendenciaP').innerHTML = datos.map(d=>`
+    <div class="presu-row">
+      <div class="presu-top"><span>${MESES[d.mes].slice(0,3)} ${d.anio}</span><span>Ing $${fmt(d.ingresos)} / Gas $${fmt(d.gastos)}</span></div>
+      <div class="progress"><div class="progress-fill" style="width:${d.ingresos/max*100}%"></div></div>
+      <div class="progress" style="margin-top:4px"><div class="progress-fill over" style="width:${d.gastos/max*100}%"></div></div>
+    </div>`).join('') || '<div class="empty">Sin datos suficientes</div>';
+
+  // Top categorías de gasto en los últimos 6 meses
+  const gastos6m = PMOVS.filter(m=>m.tipoMovimiento==='gasto' && meses.some(x=>x.mes===m.mes && x.anio===m.anio));
+  const porCat = {};
+  gastos6m.forEach(m=>{ porCat[m.categoria] = (porCat[m.categoria]||0)+m.monto; });
+  const top = Object.entries(porCat).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const totalGastos6m = gastos6m.reduce((s,m)=>s+m.monto,0) || 1;
+  document.getElementById('analisisTopCategoriasP').innerHTML = top.length ? top.map(([cat,monto])=>`
+    <div class="presu-row"><div class="presu-top"><span>${cat}</span><span>$${fmt(monto)} (${Math.round(monto/totalGastos6m*100)}%)</span></div>
+    <div class="progress"><div class="progress-fill" style="width:${monto/totalGastos6m*100}%"></div></div></div>`).join('')
+    : '<div class="empty">Sin gastos registrados</div>';
+
+  // Recomendaciones
+  const recs = [];
+  const mesesConDatos = datos.filter(d=>d.ingresos>0 || d.gastos>0);
+  const negativos = mesesConDatos.filter(d=>d.gastos > d.ingresos);
+  if(negativos.length>=2) recs.push(`Resultado negativo en ${negativos.length} de los últimos ${mesesConDatos.length} meses con datos — los gastos superaron a los ingresos más seguido de lo ocasional.`);
+  if(top.length && top[0][1]/totalGastos6m > 0.4) recs.push(`"${top[0][0]}" concentra el ${Math.round(top[0][1]/totalGastos6m*100)}% de tu gasto personal de los últimos 6 meses — vale la pena mirarlo de cerca si buscas margen.`);
+  const ultimoConDatos = mesesConDatos[mesesConDatos.length-1];
+  if(ultimoConDatos && ultimoConDatos.ingresos>0){
+    const tasaAhorro = (ultimoConDatos.ingresos-ultimoConDatos.gastos)/ultimoConDatos.ingresos;
+    if(tasaAhorro < 0.1 && tasaAhorro >= 0) recs.push(`Tu margen del último mes con datos fue de solo ${Math.round(tasaAhorro*100)}% de tus ingresos — un colchón bajo si aparece un imprevisto.`);
+  }
+  document.getElementById('analisisRecomendacionesP').innerHTML = recs.length
+    ? recs.map(r=>`<div class="split-row" style="display:block; padding:10px 0">${r}</div>`).join('')
+    : '<div class="empty">Sin señales relevantes con los datos actuales</div>';
+}
+
+/* ============ SYNC ============ */
+function sync(accion, data){
+  if(!SHEETS_URL){ PENDIENTES.push({accion,data}); persist(); renderSyncEstado(); return; }
+  fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion,data})})
+    .catch(()=>{ PENDIENTES.push({accion,data}); persist(); });
+  renderSyncEstado();
+}
+async function reintentarSync(){
+  if(!SHEETS_URL){ toast('Falta configurar la URL de Google Sheets arriba'); return; }
+  if(!PENDIENTES.length){ toast('No hay nada pendiente por sincronizar'); return; }
+
+  const pend = PENDIENTES.slice();
+  PENDIENTES = [];
+  persist();
+  renderSyncEstado();
+
+  const movimientos = pend.filter(p=>p.accion==='movimiento').map(p=>p.data);
+  const otros = pend.filter(p=>p.accion!=='movimiento');
+
+  toast('Sincronizando '+pend.length+' pendiente(s)... no cierres la app');
+
+  // Los movimientos se agrupan en lotes y se envían UNO A LA VEZ (esperando que
+  // cada lote termine antes de mandar el siguiente). Mandarlos todos de golpe
+  // (como antes) hacía que Google rechazara la mayoría por exceso de llamadas
+  // simultáneas, y los que sí llegaban quedaban desordenados.
+  const TAMAÑO_LOTE = 150;
+  for(let i=0; i<movimientos.length; i+=TAMAÑO_LOTE){
+    const lote = movimientos.slice(i, i+TAMAÑO_LOTE);
+    try{
+      await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:'movimientos_batch', data:lote})});
+    } catch(err){
+      lote.forEach(d=>PENDIENTES.push({accion:'movimiento', data:d}));
+    }
+  }
+
+  // El resto (categorías, cuentas, perfiles, cuotas, cierres, eliminar, personal) va uno por uno, como antes — son pocos.
+  for(const p of otros){
+    sync(p.accion, p.data);
+  }
+
+  persist();
+  renderSyncEstado();
+  toast('Listo — revisa el Sheet en un momento (puede tardar unos segundos en reflejarse)');
+}
+function renderSyncEstado(){
+  const dot=document.getElementById('syncDot'), txt=document.getElementById('syncTexto');
+  if(!SHEETS_URL){ dot.className='sync-dot pend'; txt.textContent='Sin configurar — pega la URL de tu Apps Script arriba'; }
+  else if(PENDIENTES.length){ dot.className='sync-dot pend'; txt.textContent=PENDIENTES.length+' registro(s) pendiente(s)'; }
+  else { dot.className='sync-dot ok'; txt.textContent='Sincronizado con Google Sheets'; }
+}
+
+/**
+ * PULL: trae lo que hay en el Google Sheet y lo mezcla con lo local, para que
+ * dos celulares distintos vean los cambios del otro sin tener que reinstalar nada.
+ * - Movimientos/Cierres: aditivo — nunca pisa un registro que ya está local, solo agrega los que faltan.
+ * - Categorías/Presupuestos: el Sheet manda (refleja el último guardado de cualquiera de los dos).
+ */
+let sincronizando = false;
+async function sincronizarDesdeSheets(silencioso){
+  if(!SHEETS_URL){ if(!silencioso) toast('Falta configurar la URL de Google Sheets (arriba en esta pantalla)'); return; }
+  if(sincronizando){ if(!silencioso) toast('Ya hay una sincronización en curso, espera un momento'); return; }
+  sincronizando = true;
+  try{
+    const res = await fetch(SHEETS_URL, {method:'GET'});
+    const data = await res.json();
+
+    // --- Movimientos (Casa) ---
+    if(data.Movimientos && data.Movimientos.length>1){
+      const headers = data.Movimientos[0];
+      const idx = n => headers.indexOf(n);
+      const idsLocales = new Set(MOVS.map(m=>m.id));
+      let agregados = 0;
+      data.Movimientos.slice(1).forEach(row=>{
+        const id = row[idx('ID')];
+        if(!id || idsLocales.has(id) || ELIMINADOS.ids.includes(id)) return;
+        const mesTxt = row[idx('Mes')];
+        MOVS.push({
+          id, tipoMovimiento: row[idx('TipoMovimiento')], fecha: row[idx('Fecha')],
+          mes: MESES.indexOf(mesTxt), anio: Number(row[idx('Año')]),
+          categoria: row[idx('Categoria')], item: row[idx('Item')], monto: Number(row[idx('Monto')]),
+          persona: row[idx('Persona')]||'', notas: row[idx('Notas')]||'',
+          tieneFotos: row[idx('TieneFotos')]==='SI', fotoLocal: null,
+          pagado: row[idx('Pagado')]==='SI', fechaPago: row[idx('FechaPago')]||'', cuentaOrigen: row[idx('CuentaOrigen')]||'',
+        });
+        idsLocales.add(id); agregados++;
+      });
+      if(agregados) console.log(agregados+' movimientos nuevos traídos desde Sheets');
+    }
+
+    // --- Cierres ---
+    if(data.Cierres && data.Cierres.length>1){
+      const headers = data.Cierres[0];
+      const idx = n => headers.indexOf(n);
+      data.Cierres.slice(1).forEach(row=>{
+        const mesTxt = row[idx('Mes')], anio = Number(row[idx('Año')]);
+        const mes = MESES.indexOf(mesTxt);
+        if(mes<0) return;
+        if(!CIERRES.find(c=>c.mes===mes && c.anio===anio)){
+          CIERRES.push({mes, anio, saldoCalculado:Number(row[idx('SaldoCalculado')]), montoLiquidado:Number(row[idx('MontoLiquidado')]), arrastre:Number(row[idx('Arrastre')])});
+        }
+      });
+    }
+
+    // --- Categorías (el Sheet manda) ---
+    if(data.Categorias && data.Categorias.length>1){
+      const headers = data.Categorias[0];
+      const idx = n => headers.indexOf(n);
+      const porCategoria = {};
+      data.Categorias.slice(1).forEach(row=>{
+        const tipo=row[idx('TipoCategoria')], nombre=row[idx('Categoria')];
+        if(!nombre) return;
+        const key = tipo+'||'+nombre;
+        if(!porCategoria[key]) porCategoria[key] = {tipo, nombre, items:[]};
+        const itemNombre = row[idx('Item')];
+        if(itemNombre){
+          if(tipo==='fijo'){
+            porCategoria[key].items.push({
+              nombre:itemNombre, montoHabitual:Number(row[idx('MontoHabitual')])||0,
+              medioPago:row[idx('MedioPago')]||'Débito', nCuotas:Number(row[idx('NCuotas')])||0, cuotaActual:Number(row[idx('CuotaActual')])||0
+            });
+          } else { porCategoria[key].items.push(itemNombre); }
+        }
+      });
+      const nuevasCats = Object.values(porCategoria).filter(c=>c.tipo==='fijo' && !ELIMINADOS.cats.includes('fijo||'+c.nombre));
+      // Presupuestos vienen en su propia hoja, se pegan aparte.
+      const presuMap = {};
+      if(data.Presupuestos && data.Presupuestos.length>1){
+        const hp = data.Presupuestos[0], idxp = n=>hp.indexOf(n);
+        data.Presupuestos.slice(1).forEach(row=>{ presuMap[row[idxp('Categoria')]] = Number(row[idxp('MontoPresupuestado')])||0; });
+      }
+      const nuevasVar = Object.values(porCategoria).filter(c=>c.tipo==='variable' && !ELIMINADOS.cats.includes('variable||'+c.nombre)).map(c=>({...c, presupuesto: presuMap[c.nombre]||0}));
+      if(nuevasCats.length || nuevasVar.length){
+        // La app nunca sube los ítems de las categorías variables a la hoja "Categorias",
+        // así que las locales que el Sheet no trae se conservan en vez de borrarse.
+        const varLocales = CATEGORIAS.filter(c=>c.tipo==='variable' && !nuevasVar.some(v=>v.nombre===c.nombre));
+        CATEGORIAS = [...nuevasCats, ...nuevasVar, ...varLocales];
+      }
+    }
+
+    // --- Cuotas (compras a crédito en curso) — el Sheet manda, evita duplicar generación entre celulares ---
+    if(data.Cuotas && data.Cuotas.length>1){
+      const headers = data.Cuotas[0];
+      const idx = n => headers.indexOf(n);
+      const remotas = data.Cuotas.slice(1).filter(row=>row[idx('ID')]).map(row=>({
+        id:row[idx('ID')], nombre:row[idx('Nombre')], categoria:row[idx('Categoria')],
+        montoCuota:Number(row[idx('MontoCuota')]), nCuotas:Number(row[idx('NCuotas')]),
+        cuotaActual:Number(row[idx('CuotaActual')]), activo:row[idx('Activo')]==='SI',
+      }));
+      if(remotas.length) CUOTAS = remotas;
+    }
+
+    // --- Perfiles y Cuentas bancarias (el Sheet manda) ---
+    if(data.Perfiles && data.Perfiles.length>1){
+      const headers = data.Perfiles[0], idx = n=>headers.indexOf(n);
+      const remotos = data.Perfiles.slice(1).filter(row=>row[idx('Nombre')]).map(row=>({nombre:row[idx('Nombre')], pin:row[idx('PIN')]||'', rol:row[idx('Rol')]||'aportante'}));
+      if(remotos.length) PERFILES = remotos;
+    }
+    if(data.Cuentas && data.Cuentas.length>1){
+      const headers = data.Cuentas[0], idx = n=>headers.indexOf(n);
+      const remotas = data.Cuentas.slice(1).filter(row=>row[idx('Nombre')]).map(row=>({nombre:row[idx('Nombre')], dueño:row[idx('Dueño')]||'comun'}));
+      if(remotas.length) CUENTAS = remotas;
+    }
+
+    // --- Personal ---
+    if(data.Personal_Movimientos && data.Personal_Movimientos.length>1){
+      const headers = data.Personal_Movimientos[0];
+      const idx = n => headers.indexOf(n);
+      const idsLocales = new Set(PMOVS.map(m=>m.id));
+      data.Personal_Movimientos.slice(1).forEach(row=>{
+        const id = row[idx('ID')];
+        if(!id || idsLocales.has(id) || ELIMINADOS.ids.includes(id)) return;
+        PMOVS.push({
+          id, tipoMovimiento: row[idx('TipoMovimiento')], fecha: row[idx('Fecha')],
+          mes: MESES.indexOf(row[idx('Mes')]), anio: Number(row[idx('Año')]),
+          categoria: row[idx('Categoria')], item: row[idx('Item')], monto: Number(row[idx('Monto')]),
+          persona: row[idx('Persona')]||'', notas: row[idx('Notas')]||'',
+        });
+        idsLocales.add(id);
+      });
+    }
+    if(data.Personal_Categorias && data.Personal_Categorias.length>1){
+      const headers = data.Personal_Categorias[0];
+      const idx = n => headers.indexOf(n);
+      const porCat = {};
+      data.Personal_Categorias.slice(1).forEach(row=>{
+        const tipo=row[idx('TipoCategoria')], nombre=row[idx('Categoria')], itemNombre=row[idx('Item')];
+        const key = tipo+'||'+nombre;
+        if(!porCat[key]) porCat[key] = {tipo, nombre, items:[]};
+        if(itemNombre) porCat[key].items.push(itemNombre);
+      });
+      const remotasP = Object.values(porCat).filter(c=>!ELIMINADOS.catsP.includes(c.tipo+'||'+c.nombre));
+      if(remotasP.length) CATEGORIAS_P = remotasP;
+    }
+
+    persist();
+    mostrarLoginSiCorresponde();
+    if(!silencioso){
+      toast('Sincronizado');
+      if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
+      if(document.getElementById('v-registrar').classList.contains('active')) renderRecientes();
+      if(document.getElementById('v-categorias').classList.contains('active')){ renderCategorias(); renderCuotasList(); renderPerfilesList(); renderCuentasBanco(); }
+    }
+  } catch(err){
+    console.log('No se pudo sincronizar desde Sheets:', err);
+    if(!silencioso) toast('No se pudo sincronizar (revisa conexión)');
+  } finally {
+    sincronizando = false;
+  }
+}
+
+// Sincroniza al abrir la app y cada 3 minutos mientras esté abierta y visible
+// (no mientras está en segundo plano, para no gastar cuota de Apps Script al dividido).
+window.addEventListener('load', ()=> setTimeout(async ()=>{
+  if(SHEETS_URL) await sincronizarDesdeSheets(true);
+  procesarCuotasAutomaticas();
+}, 800));
+setInterval(()=>{ if(document.visibilityState==='visible') sincronizarDesdeSheets(true).then(procesarCuotasAutomaticas); }, 3*60*1000);
+
+/* ============ START ============ */
+initForm();
+renderRecientes();
+mostrarLoginSiCorresponde();
+
+// Si la app queda abierta y cambia el día/mes, refresca fechas por defecto y listas.
+let diaVisto = fechaLocalISO();
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState!=='visible') return;
+  const d = fechaLocalISO();
+  if(d===diaVisto) return;
+  ['fFecha','pFecha'].forEach(id=>{ const el=document.getElementById(id); if(el.value===diaVisto) el.value=d; });
+  diaVisto = d;
+  renderRecientes(); renderRecientesP(); procesarCuotasAutomaticas();
+});
+</script>
+</body>
+</html>
