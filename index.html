@@ -49,7 +49,12 @@ button{font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; b
 .movtype-grid.p2 button.active{background:var(--personal); color:#241730; border-color:var(--personal);}
 .select-persona{display:flex; gap:8px; margin-top:6px;}
 .select-persona button{flex:1;}
+.select-persona button{background:var(--panel2); border:1px solid var(--line); color:var(--muted);}
 .select-persona button.active{background:var(--accent-dim); color:#fff; border-color:var(--accent-dim);}
+.pill-toggle{display:flex; gap:8px; margin-top:6px;}
+.pill-toggle button{flex:1; background:var(--panel2); border:1px solid var(--line); color:var(--muted);}
+.pill-toggle button.active{background:var(--accent-dim); color:#fff; border-color:var(--accent-dim);}
+.section-label{font-size:.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:14px 0 6px;}
 .balance-num{font-size:2.1rem; font-family:Georgia,serif; margin:2px 0;}
 .balance-num.favor{color:var(--favor);}
 .balance-num.debe{color:var(--debe);}
@@ -351,8 +356,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     </div>
     <div class="card">
       <h3>Nombres de las dos personas</h3>
-      <label>Persona 1</label><input id="cfgP1" oninput="guardarConfigNombres()">
-      <label>Persona 2</label><input id="cfgP2" oninput="guardarConfigNombres()">
+      <label>Persona 1</label><input id="cfgP1" onchange="guardarConfigNombres()">
+      <label>Persona 2</label><input id="cfgP2" onchange="guardarConfigNombres()">
     </div>
     <div class="card">
       <h3>Importar extracto bancario (CSV)</h3>
@@ -771,8 +776,12 @@ function toast(msg){
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
 function fmt(n){ return Math.round(n).toLocaleString('es-CL'); }
+// Escapa texto para meterlo en innerHTML o en atributos (nombres con ' " < & rompían la pantalla).
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function mensajeGuardado(){
-  return SHEETS_URL ? 'Guardado y enviado a Sheets' : 'Guardado en este celular (sin URL de Sheets configurada — solo local)';
+  return SHEETS_URL ? 'Guardado — enviando a Sheets' : 'Guardado en este celular (sin URL de Sheets configurada — solo local)';
 }
 
 /* ============ INIT FORM CASA ============ */
@@ -840,7 +849,7 @@ function actualizarCamposPorTipo(){
 function poblarSelectCategoria(filtroTipo){
   const sel = document.getElementById('fCategoria');
   const lista = filtroTipo ? CATEGORIAS.filter(c=>c.tipo===filtroTipo) : CATEGORIAS;
-  sel.innerHTML = lista.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  sel.innerHTML = lista.map(c=>`<option value="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('');
   poblarItemSelect();
 }
 
@@ -850,9 +859,9 @@ function poblarItemSelect(){
   document.getElementById('cuotaInfo').textContent = '';
   if(!cat){ sel.innerHTML=''; return; }
   if(cat.tipo==='fijo'){
-    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${it.nombre}">${it.nombre}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${esc(it.nombre)}">${esc(it.nombre)}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
   } else {
-    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${it}">${it}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+    sel.innerHTML = (cat.items||[]).map(it=>`<option value="${esc(it)}">${esc(it)}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
   }
   onItemSeleccionado();
 }
@@ -944,8 +953,8 @@ function renderRecientes(){
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
     <div class="gasto-item" onclick="abrirModalEditar('${m.id}')" style="cursor:pointer">
-      <div><div>${m.item} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
-      <div class="meta">${m.persona ? m.persona+' · ' : ''}${m.categoria}</div></div>
+      <div><div>${esc(m.item)} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
+      <div class="meta">${m.persona ? esc(m.persona)+' · ' : ''}${esc(m.categoria)}</div></div>
       <div class="monto">$${fmt(m.monto)}
         ${(m.tipoMovimiento!=='aporte' && !m.pagado)?`<button class="btn-ghost btn-xs" style="margin-left:8px; color:var(--favor); border-color:var(--favor)" onclick="event.stopPropagation(); marcarPagadoDirecto('${m.id}')">✓ Pagado</button>`:''}
         <button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoDirecto('${m.id}')">✕</button>
@@ -1063,8 +1072,8 @@ function renderListaMes(delMes){
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos este mes</div>'; return; }
   cont.innerHTML = delMes.slice().sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(m=>`
     <div class="gasto-item" onclick="abrirModalEditar('${m.id}')" style="cursor:pointer">
-      <div><div>${m.item} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
-      <div class="meta">${m.persona?m.persona+' · ':''}${m.categoria} · ${m.fecha}</div></div>
+      <div><div>${esc(m.item)} <span class="tag ${tagClaseMovimiento(m)}">${TIPO_LABEL[m.tipoMovimiento]}</span>${m.tipoMovimiento!=='aporte'?`<span class="tag ${m.pagado?'fondo':'extra'}">${m.pagado?'Pagado':'Pendiente'}</span>`:''}</div>
+      <div class="meta">${m.persona?esc(m.persona)+' · ':''}${esc(m.categoria)} · ${esc(m.fecha)}</div></div>
       <div class="monto">$${fmt(m.monto)}
         ${(m.tipoMovimiento!=='aporte' && !m.pagado)?`<button class="btn-ghost btn-xs" style="margin-left:8px; color:var(--favor); border-color:var(--favor)" onclick="event.stopPropagation(); marcarPagadoDirecto('${m.id}')">✓ Pagado</button>`:''}
         <button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoDirecto('${m.id}')">✕</button>
@@ -1119,7 +1128,7 @@ function abrirModalEditar(id){
   }
 
   document.getElementById('editPagoWrap').style.display = m.tipoMovimiento==='aporte' ? 'none' : '';
-  document.getElementById('editCuentaOrigen').innerHTML = CUENTAS.map(c=>`<option value="${nombreCuenta(c)}">${nombreCuenta(c)}</option>`).join('') || '<option value="">(sin cuentas configuradas)</option>';
+  document.getElementById('editCuentaOrigen').innerHTML = CUENTAS.map(c=>`<option value="${esc(nombreCuenta(c))}">${esc(nombreCuenta(c))}</option>`).join('') || '<option value="">(sin cuentas configuradas)</option>';
   document.getElementById('editCuentaOrigen').value = m.cuentaOrigen || '';
   if(m.pagado){
     document.getElementById('editPagoEstado').textContent = `Pagado el ${formatFechaHora(m.fechaPago)}${m.cuentaOrigen ? ' — '+m.cuentaOrigen : ''}`;
@@ -1233,12 +1242,12 @@ function mostrarLoginSiCorresponde(){
   if(!pinesConfigurados) return; // nada que pedir todavía
   if(usuarioActivo && PERFILES.some(p=>p.nombre===usuarioActivo.nombre)) return; // ya hay sesión válida
   const cont = document.getElementById('loginPerfiles');
-  cont.innerHTML = PERFILES.map(p=>`<button class="btn-ghost" style="width:100%; margin-top:8px" onclick="seleccionarPerfilLogin('${p.nombre}')">${p.nombre} <span class="hint" style="display:inline">(${p.rol})</span></button>`).join('');
+  cont.innerHTML = PERFILES.map((p,i)=>`<button class="btn-ghost" style="width:100%; margin-top:8px" onclick="seleccionarPerfilLogin(${i})">${esc(p.nombre)} <span class="hint" style="display:inline">(${esc(p.rol)})</span></button>`).join('');
   document.getElementById('loginPinWrap').style.display='none';
   document.getElementById('loginOverlay').classList.add('active');
 }
-function seleccionarPerfilLogin(nombre){
-  const p = PERFILES.find(x=>x.nombre===nombre);
+function seleccionarPerfilLogin(idx){
+  const p = PERFILES[idx];
   if(!p) return;
   loginPerfilSel = p;
   if(!p.pin){ // sin PIN configurado para este perfil, entra directo
@@ -1269,7 +1278,7 @@ function renderPerfilesList(){
   document.getElementById('sesionActualLabel').textContent = usuarioActivo ? `Sesión: ${usuarioActivo.nombre} (${usuarioActivo.rol})` : (PERFILES.some(p=>p.pin) ? 'Sin sesión' : 'Sin restricciones activas');
   const cont = document.getElementById('listaPerfiles');
   cont.innerHTML = PERFILES.length ? PERFILES.map((p,idx)=>`
-    <div class="cat-row"><div><div>${p.nombre}</div><div class="cat-items">Rol: ${p.rol} · PIN: ${p.pin?'configurado':'sin PIN'}</div></div>
+    <div class="cat-row"><div><div>${esc(p.nombre)}</div><div class="cat-items">Rol: ${esc(p.rol)} · PIN: ${p.pin?'configurado':'sin PIN'}</div></div>
       <button class="btn-ghost btn-xs" onclick="abrirModalPerfil(${idx})">Editar</button></div>`).join('')
     : '<div class="empty">Sin perfiles configurados — modo abierto, cualquiera puede editar todo</div>';
 }
@@ -1296,6 +1305,8 @@ function guardarPerfil(){
   const rol = [...document.getElementById('perfilRolToggle').children].find(b=>b.classList.contains('active')).dataset.v;
   const esNuevo = perfilEditIdx===null;
   const nuevo = {nombre, pin, rol};
+  const resultante = PERFILES.filter((_,i)=>i!==perfilEditIdx).concat(nuevo);
+  if(resultante.some(p=>p.pin) && !resultante.some(p=>p.rol==='admin')){ toast('Debe quedar al menos un Administrador'); return; }
   if(!esNuevo) PERFILES[perfilEditIdx]=nuevo; else PERFILES.push(nuevo);
 
   // Si no hay sesión activa (ej. estás creando tu propio perfil recién ahora, o editando el que ya usas), te deja logueado como este perfil.
@@ -1313,6 +1324,8 @@ function guardarPerfil(){
 function borrarPerfil(){
   if(perfilEditIdx===null) return;
   if(!requiereAdmin()) return;
+  const restantes = PERFILES.filter((_,i)=>i!==perfilEditIdx);
+  if(restantes.some(p=>p.pin) && !restantes.some(p=>p.rol==='admin')){ toast('No puedes eliminar al último Administrador'); return; }
   if(!confirm('¿Eliminar este perfil?')) return;
   const eliminado = PERFILES[perfilEditIdx];
   PERFILES.splice(perfilEditIdx,1);
@@ -1333,7 +1346,7 @@ function renderCuentasBanco(){
   document.getElementById('nuevaCuentaDueño').innerHTML = `<option value="p1">${CONFIG.p1}</option><option value="p2">${CONFIG.p2}</option><option value="comun">Fondo Común</option>`;
   const cont = document.getElementById('listaCuentasBanco');
   cont.innerHTML = CUENTAS.length ? CUENTAS.map((c,i)=>`
-    <div class="cat-row"><div><div>${nombreCuenta(c)}</div><div class="cat-items">Dueño: ${etiquetaDueño(dueñoCuenta(c))}</div></div><button class="btn-danger btn-xs" onclick="borrarCuentaBanco(${i})">✕</button></div>`).join('')
+    <div class="cat-row"><div><div>${esc(nombreCuenta(c))}</div><div class="cat-items">Dueño: ${etiquetaDueño(dueñoCuenta(c))}</div></div><button class="btn-danger btn-xs" onclick="borrarCuentaBanco(${i})">✕</button></div>`).join('')
     : '<div class="empty">Sin cuentas configuradas</div>';
 }
 function agregarCuentaBanco(){
@@ -1360,8 +1373,8 @@ function renderCuotasList(){
   cont.innerHTML = CUOTAS.map(c=>{
     const idx = CUOTAS.indexOf(c);
     const estado = c.activo ? `Cuota ${c.cuotaActual}/${c.nCuotas}` : 'Terminada';
-    return `<div class="cat-row"><div><div>${c.nombre} ${c.activo?'':'<span class="tag">Terminada</span>'}</div>
-      <div class="cat-items">${c.categoria} · $${fmt(c.montoCuota)}/mes · ${estado}</div></div>
+    return `<div class="cat-row"><div><div>${esc(c.nombre)} ${c.activo?'':'<span class="tag">Terminada</span>'}</div>
+      <div class="cat-items">${esc(c.categoria)} · $${fmt(c.montoCuota)}/mes · ${estado}</div></div>
       <div style="display:flex; gap:6px; flex-shrink:0"><button class="btn-ghost btn-xs" onclick="abrirModalCuota(${idx})">Editar</button></div></div>`;
   }).join('');
 }
@@ -1369,8 +1382,8 @@ function renderCuotasList(){
 function abrirModalCuota(idx){
   cuotaEditIdx = (idx===undefined) ? null : idx;
   document.getElementById('modalCuotaTitulo').textContent = cuotaEditIdx===null ? 'Nueva compra a cuotas' : 'Editar compra a cuotas';
-  document.getElementById('cuotaCategoria').innerHTML = CATEGORIAS.filter(c=>c.tipo==='fijo').map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
-  document.getElementById('cuotaCuentaDestino').innerHTML = `<option value="">(sin definir)</option>` + CUENTAS.map(c=>`<option value="${nombreCuenta(c)}">${nombreCuenta(c)}</option>`).join('');
+  document.getElementById('cuotaCategoria').innerHTML = CATEGORIAS.filter(c=>c.tipo==='fijo').map(c=>`<option value="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('');
+  document.getElementById('cuotaCuentaDestino').innerHTML = `<option value="">(sin definir)</option>` + CUENTAS.map(c=>`<option value="${esc(nombreCuenta(c))}">${esc(nombreCuenta(c))}</option>`).join('');
   document.getElementById('cuotaBorrarBtn').style.display = cuotaEditIdx===null ? 'none' : '';
   if(cuotaEditIdx===null){
     document.getElementById('cuotaNombre').value = '';
@@ -1467,12 +1480,12 @@ function renderCategorias(){
   document.getElementById('listaCategoriasFijas').innerHTML = fijas.map(c=>{
     const idx = CATEGORIAS.indexOf(c);
     const itemsTxt = (c.items||[]).map(it=>{
-      let s = it.nombre;
+      let s = esc(it.nombre);
       if(it.montoHabitual) s += ` ($${fmt(it.montoHabitual)})`;
       if(it.medioPago==='Crédito' && it.nCuotas>0) s += ` [cuota ${it.cuotaActual||0}/${it.nCuotas}]`;
       return s;
     }).join(', ');
-    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${itemsTxt||'Sin ítems'}</div></div>
+    return `<div class="cat-row"><div><div>${esc(c.nombre)}</div><div class="cat-items">${itemsTxt||'Sin ítems'}</div></div>
       <div style="display:flex; gap:6px; flex-shrink:0">
         <button class="btn-ghost btn-xs" onclick="abrirModalCategoria('fijo', ${idx})">Editar</button>
         <button class="btn-danger btn-xs" onclick="borrarCategoria(${idx})">✕</button></div></div>`;
@@ -1480,7 +1493,7 @@ function renderCategorias(){
 
   document.getElementById('listaCategoriasVariables').innerHTML = variables.map(c=>{
     const idx = CATEGORIAS.indexOf(c);
-    return `<div class="cat-row"><div><div>${c.nombre} — presupuesto $${fmt(c.presupuesto||0)}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+    return `<div class="cat-row"><div><div>${esc(c.nombre)} — presupuesto $${fmt(c.presupuesto||0)}</div><div class="cat-items">${esc((c.items||[]).join(', '))||'Sin ítems'}</div></div>
       <div style="display:flex; gap:6px; flex-shrink:0">
         <button class="btn-ghost btn-xs" onclick="abrirModalCategoria('variable', ${idx})">Editar</button>
         <button class="btn-danger btn-xs" onclick="borrarCategoria(${idx})">✕</button></div></div>`;
@@ -1514,7 +1527,7 @@ function agregarItemFijoRow(it){
   row.className='item-row';
   row.innerHTML = `
     <div class="item-row-top">
-      <input class="it-nombre" placeholder="Nombre del ítem" value="${it.nombre||''}">
+      <input class="it-nombre" placeholder="Nombre del ítem" value="${esc(it.nombre)}">
       <button class="btn-danger btn-xs" onclick="this.closest('.item-row').remove()">✕</button>
     </div>
     <div class="row2">
@@ -1532,7 +1545,7 @@ function agregarItemFijoRow(it){
     <label style="margin-top:6px">Cuenta de destino (quién paga esto)</label>
     <select class="it-cuenta-destino">
       <option value="">(sin definir)</option>
-      ${CUENTAS.map(c=>`<option value="${nombreCuenta(c)}" ${it.cuentaDestino===nombreCuenta(c)?'selected':''}>${nombreCuenta(c)}</option>`).join('')}
+      ${CUENTAS.map(c=>`<option value="${esc(nombreCuenta(c))}" ${it.cuentaDestino===nombreCuenta(c)?'selected':''}>${esc(nombreCuenta(c))}</option>`).join('')}
     </select>`;
   row.querySelector('.it-medio').onchange = (e)=>{
     row.querySelector('.credito-fields').classList.toggle('show', e.target.value==='Crédito');
@@ -1574,25 +1587,36 @@ function borrarCategoria(idx){
   sync('categorias', CATEGORIAS.filter(c=>c.tipo!=='variable'));
   sync('presupuestos', CATEGORIAS.filter(c=>c.tipo==='variable').map(c=>({categoria:c.nombre, monto:c.presupuesto||0})));
 }
+// Se dispara al terminar de editar (onchange), no en cada tecla. Los movimientos guardan el
+// nombre como texto, así que al renombrar se actualizan también los registros anteriores.
 function guardarConfigNombres(){
-  CONFIG.p1 = document.getElementById('cfgP1').value.trim()||'Persona 1';
-  CONFIG.p2 = document.getElementById('cfgP2').value.trim()||'Persona 2';
+  const old1 = CONFIG.p1, old2 = CONFIG.p2;
+  const n1 = document.getElementById('cfgP1').value.trim()||'Persona 1';
+  const n2 = document.getElementById('cfgP2').value.trim()||'Persona 2';
+  if(n1===n2){ toast('Los dos nombres deben ser distintos'); document.getElementById('cfgP1').value=old1; document.getElementById('cfgP2').value=old2; return; }
+  if(n1===old1 && n2===old2) return;
+  const mapa = {}; mapa[old1]=n1; mapa[old2]=n2;
+  [MOVS, PMOVS].forEach(lista=>lista.forEach(m=>{ if(m.persona && mapa[m.persona]) m.persona = mapa[m.persona]; }));
+  CONFIG.p1 = n1; CONFIG.p2 = n2;
   persist();
-  document.getElementById('movPersonaToggle').children[0].textContent = CONFIG.p1;
-  document.getElementById('movPersonaToggle').children[1].textContent = CONFIG.p2;
+  ['movPersonaToggle','pPersonaToggle','csvPersonaToggle'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.children[0].textContent = CONFIG.p1; el.children[1].textContent = CONFIG.p2;
+  });
+  toast('Nombres actualizados (el historial ya enviado al Sheet conserva el nombre anterior)');
 }
 
 /* ============ PERSONAL: registrar ============ */
 function poblarSelectCategoriaP(){
   const sel = document.getElementById('pCategoria');
   const lista = CATEGORIAS_P.filter(c=>c.tipo===movTipoSelP);
-  sel.innerHTML = lista.map(c=>`<option value="${c.nombre}">${c.nombre}</option>`).join('');
+  sel.innerHTML = lista.map(c=>`<option value="${esc(c.nombre)}">${esc(c.nombre)}</option>`).join('');
   poblarItemSelectP();
 }
 function poblarItemSelectP(){
   const cat = CATEGORIAS_P.find(c=>c.nombre===document.getElementById('pCategoria').value);
   const sel = document.getElementById('pItemSelect');
-  sel.innerHTML = (cat && cat.items ? cat.items:[]).map(i=>`<option value="${i}">${i}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
+  sel.innerHTML = (cat && cat.items ? cat.items:[]).map(i=>`<option value="${esc(i)}">${esc(i)}</option>`).join('') + `<option value="__otro__">+ Otro (nuevo ítem)</option>`;
   sel.onchange = ()=>{ document.getElementById('pItemOtroWrap').style.display = sel.value==='__otro__'?'':'none'; };
   sel.onchange();
 }
@@ -1625,8 +1649,8 @@ function renderRecientesP(){
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
     <div class="gasto-item" onclick="abrirModalEditarP('${m.id}')" style="cursor:pointer">
-      <div><div>${m.item} <span class="tag ${m.tipoMovimiento==='ingreso'?'ingreso':''}">${m.tipoMovimiento==='ingreso'?'Ingreso':'Gasto'}</span></div>
-      <div class="meta">${m.persona?m.persona+' · ':''}${m.categoria}</div></div><div class="monto">$${fmt(m.monto)}<button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoPersonalDirecto('${m.id}')">✕</button></div></div>`).join('');
+      <div><div>${esc(m.item)} <span class="tag ${m.tipoMovimiento==='ingreso'?'ingreso':''}">${m.tipoMovimiento==='ingreso'?'Ingreso':'Gasto'}</span></div>
+      <div class="meta">${m.persona?esc(m.persona)+' · ':''}${esc(m.categoria)}</div></div><div class="monto">$${fmt(m.monto)}<button class="btn-danger btn-xs" style="margin-left:8px" onclick="event.stopPropagation(); eliminarMovimientoPersonalDirecto('${m.id}')">✕</button></div></div>`).join('');
 }
 
 function eliminarMovimientoPersonalDirecto(id){
@@ -1733,13 +1757,13 @@ function renderCategoriasP(){
   const ing = CATEGORIAS_P.filter(c=>c.tipo==='ingreso'), gas = CATEGORIAS_P.filter(c=>c.tipo==='gasto');
   document.getElementById('listaCatIngreso').innerHTML = ing.map(c=>{
     const idx = CATEGORIAS_P.indexOf(c);
-    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+    return `<div class="cat-row"><div><div>${esc(c.nombre)}</div><div class="cat-items">${esc((c.items||[]).join(', '))||'Sin ítems'}</div></div>
       <div style="display:flex; gap:6px"><button class="btn-ghost btn-xs" onclick="abrirModalCategoriaP('ingreso', ${idx})">Editar</button>
       <button class="btn-danger btn-xs" onclick="borrarCategoriaP(${idx})">✕</button></div></div>`;
   }).join('') || '<div class="empty">Sin categorías</div>';
   document.getElementById('listaCatGastoP').innerHTML = gas.map(c=>{
     const idx = CATEGORIAS_P.indexOf(c);
-    return `<div class="cat-row"><div><div>${c.nombre}</div><div class="cat-items">${(c.items||[]).join(', ')||'Sin ítems'}</div></div>
+    return `<div class="cat-row"><div><div>${esc(c.nombre)}</div><div class="cat-items">${esc((c.items||[]).join(', '))||'Sin ítems'}</div></div>
       <div style="display:flex; gap:6px"><button class="btn-ghost btn-xs" onclick="abrirModalCategoriaP('gasto', ${idx})">Editar</button>
       <button class="btn-danger btn-xs" onclick="borrarCategoriaP(${idx})">✕</button></div></div>`;
   }).join('') || '<div class="empty">Sin categorías</div>';
@@ -1785,9 +1809,34 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // Hash simple y estable — mismo contenido siempre da el mismo ID, así una transacción
 // que aparece en dos extractos con fechas traslapadas no se duplica.
 function hashEstable(str){
-  let h = 0;
-  for(let i=0;i<str.length;i++){ h = (Math.imul(31,h) + str.charCodeAt(i))|0; }
-  return 'csv'+Math.abs(h);
+  let h1 = 0, h2 = 5381;
+  for(let i=0;i<str.length;i++){
+    const c = str.charCodeAt(i);
+    h1 = (Math.imul(31,h1) + c)|0;
+    h2 = (Math.imul(33,h2) ^ c)|0;
+  }
+  return 'csv'+(h1>>>0).toString(36)+(h2>>>0).toString(36);
+}
+
+// Interpreta montos tipo "$12.500", "12.500,50", "12500.50", "-3.200" o "(3.200)". Devuelve NaN si no es número.
+function parseMontoCL(txt){
+  let s = String(txt==null?'':txt).trim();
+  if(!s) return NaN;
+  let neg = /^\(.*\)$/.test(s) || s.includes('-');
+  s = s.replace(/[^0-9.,]/g,'');
+  if(!s) return NaN;
+  const ultPunto = s.lastIndexOf('.'), ultComa = s.lastIndexOf(',');
+  if(ultPunto>=0 && ultComa>=0){
+    // el separador que aparece último es el decimal
+    s = ultComa>ultPunto ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
+  } else if(ultComa>=0){
+    s = /,\d{1,2}$/.test(s) ? s.replace(/,/g,'.') : s.replace(/,/g,'');
+  } else if(ultPunto>=0){
+    if(!/^\d{1,3}(\.\d{3})+$/.test(s) && /\.\d{1,2}$/.test(s)) { /* decimal con punto */ }
+    else s = s.replace(/\./g,'');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? NaN : (neg ? -n : n);
 }
 
 function parsearCSV(texto){
@@ -1839,12 +1888,19 @@ function importarCSVBancario(e){
     const idsExistentes = new Set(MOVS.map(m=>m.id));
     let nuevos = 0, duplicados = 0, saltados = 0;
 
+    // Con una columna "Monto" genérica que trae negativos (cargos) y positivos (abonos),
+    // solo los negativos son gastos; los abonos se saltan.
+    const hayNegativos = idxCargo<0 && filas.slice(1).some(f=>parseMontoCL(f[idxMonto])<0);
+    const vistos = {};
+
     filas.slice(1).forEach(fila=>{
       const fechaRaw = fila[idxFecha];
       const montoRaw = fila[idxMonto];
       const desc = idxDesc>=0 ? fila[idxDesc] : 'Movimiento importado';
       if(!fechaRaw || !montoRaw){ saltados++; return; }
-      const monto = Math.abs(parseFloat(montoRaw.replace(/\./g,'').replace(',','.')));
+      const montoFirmado = parseMontoCL(montoRaw);
+      if(isNaN(montoFirmado) || (hayNegativos && montoFirmado>0)){ saltados++; return; }
+      const monto = Math.abs(montoFirmado);
       if(!monto || monto<=0){ saltados++; return; }
 
       // normaliza fecha a YYYY-MM-DD si viene DD-MM-YYYY o DD/MM/YYYY
@@ -1854,7 +1910,10 @@ function importarCSVBancario(e){
       const d = new Date(fecha+'T00:00:00');
       if(isNaN(d.getTime())){ saltados++; return; }
 
-      const id = hashEstable(fecha+'|'+desc+'|'+monto);
+      // Dos compras idénticas el mismo día en el mismo archivo son distintas: se numeran.
+      const base = fecha+'|'+desc+'|'+monto;
+      vistos[base] = (vistos[base]||0) + 1;
+      const id = hashEstable(base+'|'+vistos[base]);
       if(idsExistentes.has(id)){ duplicados++; return; }
 
       const m = { id, tipoMovimiento:'cuenta', fecha, mes:d.getMonth(), anio:d.getFullYear(),
