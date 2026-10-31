@@ -195,7 +195,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     </div>
 
     <div class="card">
-      <h3>Últimos registrados <span style="float:right" id="mesRegistrarLabel"></span></h3>
+      <h3>Últimos 8 del mes <span style="float:right" id="mesRegistrarLabel"></span></h3>
+      <small class="hint">Solo los 8 más recientes del mes actual. La lista completa, de cualquier mes, está en Balance.</small>
       <div id="listaRecientes"><div class="empty">Sin movimientos aún este mes</div></div>
     </div>
   </div>
@@ -239,7 +240,7 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     </div>
 
     <div class="card">
-      <h3>Últimos registrados <span style="float:right" id="mesRegistrarLabelP"></span></h3>
+      <h3>Últimos 8 del mes <span style="float:right" id="mesRegistrarLabelP"></span></h3>
       <div id="listaRecientesP"><div class="empty">Sin movimientos aún este mes</div></div>
     </div>
   </div>
@@ -401,6 +402,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
       <small class="hint">Se sincroniza sola al abrir la app y cada 3 minutos mientras está abierta. Úsalo manual si acabas de registrar algo en el otro celular y quieres verlo ya.</small>
       <button class="btn-ghost btn-sm" style="margin-top:12px; width:100%" onclick="sincronizarDesdeSheets(false)">Sincronizar ahora</button>
       <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reintentarSync()">Reintentar sincronización pendiente</button>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="verificarSheet()">Verificar qué falta en el Sheet</button>
+      <small class="hint">Compara los movimientos de este celular con los del Sheet y envía solo los que faltan.</small>
     </div>
   </div>
 
@@ -948,7 +951,7 @@ function tagClaseMovimiento(m){
 function renderRecientes(){
   hoy = new Date();
   document.getElementById('mesRegistrarLabel').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
-  const delMes = MOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,8);
+  const delMes = MOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id)).slice(0,8);
   const cont = document.getElementById('listaRecientes');
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
@@ -1423,11 +1426,13 @@ function guardarCuota(){
   cerrarModalCuota();
   renderCuotasList();
   toast(mensajeGuardado());
+  procesarCuotasAutomaticas(); // registra la cuota de este mes ahora, sin esperar al próximo ciclo
 }
 function borrarCuota(){
   if(cuotaEditIdx===null) return;
   if(!confirm('¿Eliminar esta compra a cuotas? No borra los movimientos ya generados, solo detiene los futuros.')) return;
-  CUOTAS.splice(cuotaEditIdx,1);
+  const borrada = CUOTAS.splice(cuotaEditIdx,1)[0];
+  (ELIMINADOS.cuotas = ELIMINADOS.cuotas || []).push(borrada.id);
   persist();
   sync('cuotas', CUOTAS);
   cerrarModalCuota();
@@ -1644,7 +1649,7 @@ function guardarMovimientoPersonal(){
 function renderRecientesP(){
   hoy = new Date();
   document.getElementById('mesRegistrarLabelP').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
-  const delMes = PMOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,8);
+  const delMes = PMOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id)).slice(0,8);
   const cont = document.getElementById('listaRecientesP');
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
@@ -2355,6 +2360,31 @@ async function reintentarSync(){
   renderSyncEstado();
   toast('Listo — revisa el Sheet en un momento (puede tardar unos segundos en reflejarse)');
 }
+// Los envíos al Sheet usan no-cors: la app no puede saber si llegaron. Esto lo comprueba leyendo el Sheet.
+async function verificarSheet(){
+  if(!SHEETS_URL){ toast('Falta configurar la URL de Google Sheets'); return; }
+  toast('Comparando con el Sheet...');
+  try{
+    const data = await (await fetch(SHEETS_URL, {method:'GET'})).json();
+    const filas = data.Movimientos || [];
+    const idCol = filas.length ? filas[0].indexOf('ID') : -1;
+    const enSheet = new Set(idCol>=0 ? filas.slice(1).map(r=>r[idCol]) : []);
+    const faltan = MOVS.filter(m=>!enSheet.has(m.id));
+    const txt = 'Este celular: '+MOVS.length+' movimientos · Sheet: '+enSheet.size+' · Faltan en el Sheet: '+faltan.length;
+    document.getElementById('syncTexto').textContent = txt;
+    if(!faltan.length){ toast('El Sheet tiene todos los movimientos de este celular'); return; }
+    if(!confirm(txt+'\n\n¿Enviar al Sheet los '+faltan.length+' que faltan?')) return;
+    const TAMAÑO_LOTE = 150;
+    for(let i=0; i<faltan.length; i+=TAMAÑO_LOTE){
+      const lote = faltan.slice(i, i+TAMAÑO_LOTE).map(m=>({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas||'', tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''}));
+      await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:'movimientos_batch', data:lote})});
+    }
+    toast('Enviados '+faltan.length+'. Espera unos segundos y vuelve a verificar.');
+  } catch(err){
+    toast('No se pudo leer el Sheet (revisa la URL y la conexión)');
+  }
+}
+
 function renderSyncEstado(){
   const dot=document.getElementById('syncDot'), txt=document.getElementById('syncTexto');
   if(!SHEETS_URL){ dot.className='sync-dot pend'; txt.textContent='Sin configurar — pega la URL de tu Apps Script arriba'; }
@@ -2454,12 +2484,19 @@ async function sincronizarDesdeSheets(silencioso){
     if(data.Cuotas && data.Cuotas.length>1){
       const headers = data.Cuotas[0];
       const idx = n => headers.indexOf(n);
-      const remotas = data.Cuotas.slice(1).filter(row=>row[idx('ID')]).map(row=>({
-        id:row[idx('ID')], nombre:row[idx('Nombre')], categoria:row[idx('Categoria')],
-        montoCuota:Number(row[idx('MontoCuota')]), nCuotas:Number(row[idx('NCuotas')]),
-        cuotaActual:Number(row[idx('CuotaActual')]), activo:row[idx('Activo')]==='SI',
-      }));
-      if(remotas.length) CUOTAS = remotas;
+      const eliminadasQ = ELIMINADOS.cuotas || [];
+      const remotas = data.Cuotas.slice(1).filter(row=>row[idx('ID')] && !eliminadasQ.includes(row[idx('ID')])).map(row=>{
+        const id = row[idx('ID')], previa = CUOTAS.find(q=>q.id===id) || {};
+        return {
+          id, nombre:row[idx('Nombre')], categoria:row[idx('Categoria')],
+          montoCuota:Number(row[idx('MontoCuota')]), nCuotas:Number(row[idx('NCuotas')]),
+          cuotaActual:Number(row[idx('CuotaActual')]), activo:row[idx('Activo')]==='SI',
+          cuentaDestino: previa.cuentaDestino || '',
+        };
+      });
+      // Las cuotas creadas aquí que el Sheet todavía no trae se conservan (el envío no es instantáneo).
+      const soloLocales = CUOTAS.filter(q=>!remotas.some(r=>r.id===q.id));
+      if(remotas.length || soloLocales.length) CUOTAS = [...remotas, ...soloLocales];
     }
 
     // --- Perfiles y Cuentas bancarias (el Sheet manda) ---
