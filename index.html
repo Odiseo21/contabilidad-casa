@@ -1069,7 +1069,9 @@ function renderBalance(){
   document.getElementById('balanceResumen').innerHTML = `
     ${encabezado}
     <div style="margin-top:14px">
-      <div class="split-row"><span>Total gastos reales del mes</span><span>$${fmt(b.total)}</span></div>
+      <div class="split-row"><span>Gastos fijos y variables</span><span>$${fmt(b.total - b.cuentaP1 - b.cuentaP2)}</span></div>
+      <div class="split-row"><span>Extras a devolver (pagados con plata propia)</span><span>$${fmt(b.cuentaP1 + b.cuentaP2)}</span></div>
+      <div class="split-row" style="font-weight:600"><span>Total a repartir 50/50</span><span>$${fmt(b.total)}</span></div>
       <div class="split-row"><span>Aporte requerido c/u (50%)</span><span>$${fmt(b.aporteReq)}</span></div>
       <div class="split-row"><span>Aportes al fondo — ${CONFIG.p1}</span><span>$${fmt(b.aportesFondoP1)}</span></div>
       <div class="split-row"><span>Aportes al fondo — ${CONFIG.p2}</span><span>$${fmt(b.aportesFondoP2)}</span></div>
@@ -2259,7 +2261,9 @@ function renderResumen(){
   const actuales = gastosDe(mes,anio);
   const [pm,pa] = mes===0 ? [11,anio-1] : [mes-1,anio];
   const previos = gastosDe(pm,pa);
-  const total = suma(actuales);
+  // "Gastado" = fijos + variables (lo que el plan cubre). Los extras con plata propia van aparte.
+  const extras = suma(actuales.filter(x=>x.tipoMovimiento==='cuenta'));
+  const total = suma(actuales) - extras;
 
   // 1. Dónde se fuga: categorías que más subieron frente al mes anterior
   const porCat = l=>{ const o={}; l.forEach(x=>{ o[x.categoria]=(o[x.categoria]||0)+x.monto; }); return o; };
@@ -2283,7 +2287,8 @@ function renderResumen(){
     <div class="balance-num ${total>plan&&plan>0?'debe':'favor'}">$${fmt(total)}</div>
     <div class="balance-sub">de $${fmt(plan)} planificado (fijos $${fmt(planFijos)} · variables $${fmt(planVar)} · cuotas $${fmt(planCuotas)})</div>
     <div class="progress"><div class="progress-fill ${total>plan&&plan>0?'over':''}" style="width:${Math.min(100,pct)}%"></div></div>
-    <div class="balance-sub" style="margin-top:6px">${plan<=0 ? 'Configura montos habituales y presupuestos para ver el plan.' : dif>=0 ? 'Quedan $'+fmt(dif)+' de lo planificado' : 'Vas $'+fmt(-dif)+' sobre lo planificado'}</div>`;
+    <div class="balance-sub" style="margin-top:6px">${plan<=0 ? 'Configura montos habituales y presupuestos para ver el plan.' : dif>=0 ? 'Quedan $'+fmt(dif)+' de lo planificado' : 'Vas $'+fmt(-dif)+' sobre lo planificado'}</div>
+    <div class="split-row" style="margin-top:8px"><span>Extras con plata propia (fuera del plan)</span><span>$${fmt(extras)}</span></div>`;
 
   // 3. Por pagar: gastos fijos del mes sin marcar como pagados
   const pend = actuales.filter(x=>x.tipoMovimiento==='fijo' && !x.pagado).sort((a,b)=>b.monto-a.monto);
