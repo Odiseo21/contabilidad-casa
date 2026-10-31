@@ -429,6 +429,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
       <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reintentarSync()">Reintentar sincronización pendiente</button>
       <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="verificarSheet()">Verificar qué falta en el Sheet</button>
       <small class="hint">Compara los movimientos de este celular con los del Sheet y envía solo los que faltan.</small>
+      <button class="btn-danger btn-sm" style="margin-top:12px; width:100%" onclick="abrirDuplicados()">Buscar y borrar duplicados</button>
+      <small class="hint">Busca copias exactas en este celular y filas que están solo en el Sheet. Tú eliges qué borrar antes de confirmar.</small>
     </div>
   </div>
 
@@ -643,6 +645,18 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
       <button class="btn-ghost" onclick="cerrarModalPerfil()">Cancelar</button>
     </div>
     <button class="btn-primary" onclick="guardarPerfil()">Guardar</button>
+  </div>
+</div>
+
+<!-- Modal limpiar duplicados -->
+<div class="modal-bg" id="modalDuplicados">
+  <div class="modal">
+    <h3>Limpiar duplicados</h3>
+    <div id="dupContenido"></div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-ghost" onclick="cerrarModalDuplicados()">Cancelar</button>
+      <button class="btn-danger" onclick="borrarDuplicadosSeleccionados()">Borrar seleccionados</button>
+    </div>
   </div>
 </div>
 
@@ -2483,6 +2497,100 @@ async function verificarSheet(){
   } catch(err){
     toast('No se pudo leer el Sheet (revisa la URL y la conexión)');
   }
+}
+
+/* ============ LIMPIAR DUPLICADOS ============ */
+let dupCandidatos = [];
+// Dos movimientos son "la misma cosa" si coinciden en todo menos el ID.
+function claveMov(m){
+  return [m.tipoMovimiento, m.fecha ? String(m.fecha).slice(0,10) : '', m.categoria, m.item, Math.round(Number(m.monto)||0), m.persona||'']
+    .map(x=>String(x==null?'':x).trim().toLowerCase()).join('|');
+}
+async function abrirDuplicados(){
+  if(!requiereAdmin()) return;
+  toast('Buscando duplicados...');
+  dupCandidatos = [];
+
+  // 1) Copias exactas dentro de este celular: se conserva una (la pagada, o la más antigua).
+  const agrupar = (lista, origen)=>{
+    const grupos = {};
+    lista.forEach(m=>{ const k = claveMov(m); (grupos[k] = grupos[k] || []).push(m); });
+    Object.values(grupos).filter(a=>a.length>1).forEach(a=>{
+      a.sort((x,y)=>(y.pagado?1:0)-(x.pagado?1:0) || x.id.localeCompare(y.id));
+      a.slice(1).forEach(m=>dupCandidatos.push({
+        id:m.id, origen, m, motivo:'Copia exacta de otro registro (se conserva el original)',
+        // gastos variables/personales repetidos pueden ser reales (dos compras iguales): no se marcan solos
+        marcado: m.tipoMovimiento!=='variable' && m.tipoMovimiento!=='gasto'
+      }));
+    });
+  };
+  agrupar(MOVS, 'casa');
+  agrupar(PMOVS, 'personal');
+
+  // 2) Filas que están en el Sheet y no en este celular.
+  let repetidosEnSheet = 0, errorSheet = '';
+  if(SHEETS_URL){
+    try{
+      const data = await (await fetch(SHEETS_URL, {method:'GET'})).json();
+      const filas = data.Movimientos || [];
+      if(filas.length>1){
+        const h = filas[0], ix = n=>h.indexOf(n);
+        const idsLocales = new Set(MOVS.map(m=>m.id));
+        const clavesLocales = new Set(MOVS.map(claveMov));
+        const vistos = {};
+        filas.slice(1).forEach(r=>{
+          const id = r[ix('ID')]; if(!id) return;
+          vistos[id] = (vistos[id]||0) + 1;
+          if(idsLocales.has(id)) return;
+          const m = {id, tipoMovimiento:r[ix('TipoMovimiento')], fecha:r[ix('Fecha')], categoria:r[ix('Categoria')], item:r[ix('Item')], monto:Number(r[ix('Monto')]), persona:r[ix('Persona')]||''};
+          const copia = clavesLocales.has(claveMov(m));
+          dupCandidatos.push({id, origen:'sheet', m, marcado:copia,
+            motivo: copia ? 'Solo en el Sheet y repite un movimiento de este celular' : 'Solo en el Sheet: puede ser del otro celular, revisa antes de borrar'});
+        });
+        repetidosEnSheet = Object.values(vistos).filter(n=>n>1).length;
+      }
+    } catch(e){ errorSheet = 'No se pudo leer el Sheet, así que solo se revisó este celular.'; }
+  }
+
+  const secciones = [['casa','Casa — copias en este celular'],['personal','Personal — copias en este celular'],['sheet','Solo en el Sheet']];
+  let html = '';
+  secciones.forEach(([origen,titulo])=>{
+    const filas = dupCandidatos.map((c,i)=>({c,i})).filter(x=>x.c.origen===origen);
+    if(!filas.length) return;
+    html += `<div class="section-label">${titulo} (${filas.length})</div>` + filas.map(({c,i})=>`
+      <label style="display:flex; gap:10px; align-items:flex-start; margin:0; padding:8px 0; border-bottom:1px solid var(--line); color:var(--text); font-size:.88rem">
+        <input type="checkbox" class="dup-chk" data-i="${i}" ${c.marcado?'checked':''} style="width:auto; margin-top:3px">
+        <span>${esc(c.m.item)} · ${esc(c.m.categoria)} · $${fmt(c.m.monto)} · ${esc(String(c.m.fecha||'').slice(0,10))}${c.m.persona?' · '+esc(c.m.persona):''}<br><small class="hint" style="margin-top:2px">${esc(c.motivo)}</small></span>
+      </label>`).join('');
+  });
+  if(!dupCandidatos.length) html = '<div class="empty">No encontré duplicados ni filas sobrantes.</div>';
+  if(repetidosEnSheet) html += `<small class="hint">El Sheet tiene ${repetidosEnSheet} ID repetido(s) en distintas filas: bórralas a mano desde Google Sheets, la app no puede distinguir cuál fila sobra.</small>`;
+  if(errorSheet) html += `<small class="hint">${errorSheet}</small>`;
+  document.getElementById('dupContenido').innerHTML = html;
+  document.getElementById('modalDuplicados').classList.add('active');
+}
+function cerrarModalDuplicados(){ document.getElementById('modalDuplicados').classList.remove('active'); }
+function borrarDuplicadosSeleccionados(){
+  const marcados = [...document.querySelectorAll('#dupContenido .dup-chk:checked')].map(c=>dupCandidatos[Number(c.dataset.i)]);
+  if(!marcados.length){ toast('No hay nada seleccionado'); return; }
+  if(!confirm('¿Borrar '+marcados.length+' registro(s)? No se puede deshacer.')) return;
+  marcados.forEach(c=>{
+    ELIMINADOS.ids.push(c.id);
+    if(c.origen==='personal'){
+      PMOVS = PMOVS.filter(x=>x.id!==c.id);
+      sync('eliminar_personal_movimiento', {id:c.id});
+    } else {
+      if(c.origen==='casa'){ MOVS = MOVS.filter(x=>x.id!==c.id); delete FOTOS[c.id]; }
+      sync('eliminar_movimiento', {id:c.id});
+    }
+  });
+  persist();
+  cerrarModalDuplicados();
+  renderRecientes(); renderRecientesP(); renderSyncEstado();
+  ['v-balance','v-resumen','v-resultados'].forEach(v=>{
+    if(document.getElementById(v).classList.contains('active')) mostrarVista(v);
+  });
+  toast(marcados.length+' registro(s) borrado(s)');
 }
 
 function renderSyncEstado(){
