@@ -195,8 +195,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     </div>
 
     <div class="card">
-      <h3>Últimos 8 del mes <span style="float:right" id="mesRegistrarLabel"></span></h3>
-      <small class="hint">Solo los 8 más recientes del mes actual. La lista completa, de cualquier mes, está en Balance.</small>
+      <h3>Agregado este mes <span style="float:right" id="mesRegistrarLabel"></span></h3>
+      <small class="hint" id="registrarLinea"></small>
       <div id="listaRecientes"><div class="empty">Sin movimientos aún este mes</div></div>
     </div>
   </div>
@@ -240,7 +240,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     </div>
 
     <div class="card">
-      <h3>Últimos 8 del mes <span style="float:right" id="mesRegistrarLabelP"></span></h3>
+      <h3>Agregado este mes <span style="float:right" id="mesRegistrarLabelP"></span></h3>
+      <small class="hint" id="registrarLineaP"></small>
       <div id="listaRecientesP"><div class="empty">Sin movimientos aún este mes</div></div>
     </div>
   </div>
@@ -290,6 +291,30 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
     <div class="card">
       <h3>Gastos por categoría</h3>
       <div id="listaGastosP"><div class="empty">Sin gastos este mes</div></div>
+    </div>
+  </div>
+
+  <!-- ================= RESUMEN DEL MES (CASA) ================= -->
+  <div class="view" id="v-resumen" data-mod="casa">
+    <div class="card">
+      <h3>¿Dónde se fuga la plata? <span style="float:right" id="resumenMesLabel"></span></h3>
+      <div id="resumenFugas"></div>
+    </div>
+    <div class="card">
+      <h3>Gastado vs. planificado</h3>
+      <div id="resumenPlan"></div>
+    </div>
+    <div class="card">
+      <h3>Por pagar</h3>
+      <div id="resumenPorPagar"></div>
+    </div>
+    <div class="card">
+      <h3>Presupuesto variable</h3>
+      <div id="resumenVariables"></div>
+    </div>
+    <div class="card">
+      <h3>Gasto total — últimos 6 meses</h3>
+      <div id="resumenTendencia"></div>
     </div>
   </div>
 
@@ -440,6 +465,7 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
 <div class="tabbar" id="tabbarCasa">
   <button class="tab-btn active" data-view="v-registrar" onclick="mostrarVista('v-registrar')"><span class="ic">＋</span>Registrar</button>
   <button class="tab-btn" data-view="v-balance" onclick="mostrarVista('v-balance')"><span class="ic">⚖</span>Balance</button>
+  <button class="tab-btn" data-view="v-resumen" onclick="mostrarVista('v-resumen')"><span class="ic">📋</span>Resumen</button>
   <button class="tab-btn" data-view="v-analisis" onclick="mostrarVista('v-analisis')"><span class="ic">📈</span>Análisis</button>
   <button class="tab-btn" data-view="v-categorias" onclick="mostrarVista('v-categorias')"><span class="ic">☰</span>Categorías</button>
 </div>
@@ -753,17 +779,18 @@ function mostrarVista(id){
   document.getElementById(id).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===id));
   const titulos = {
-    'v-registrar':'Gastos Casa','v-balance':'Balance mensual','v-analisis':'Análisis Casa','v-categorias':'Categorías',
+    'v-registrar':'Gastos Casa','v-balance':'Balance mensual','v-resumen':'Resumen del mes','v-analisis':'Análisis Casa','v-categorias':'Categorías',
     'v-registrar-personal':'Finanzas Personales','v-resultados':'Estado de resultados','v-analisis-personal':'Análisis Personal','v-categorias-personal':'Categorías personales'
   };
   document.getElementById('tituloVista').textContent = titulos[id];
   const subs = {
-    'v-registrar':'Registra fijos, variables, cuentas o aportes','v-balance':'Reparto 50/50 con arrastre','v-analisis':'Tendencias y recomendaciones','v-categorias':'Catálogo de fijos, variables y presupuestos',
+    'v-registrar':'Registra fijos, variables, cuentas o aportes','v-balance':'Reparto 50/50 con arrastre','v-resumen':'Dónde va la plata este mes','v-analisis':'Tendencias y recomendaciones','v-categorias':'Catálogo de fijos, variables y presupuestos',
     'v-registrar-personal':'Tus ingresos y gastos, independiente de la casa','v-resultados':'Ingresos − Gastos del mes','v-analisis-personal':'Tendencias y recomendaciones','v-categorias-personal':'Ajusta tus categorías'
   };
   document.getElementById('subVista').textContent = subs[id];
 
   if(id==='v-balance') renderBalance();
+  if(id==='v-resumen') renderResumen();
   if(id==='v-analisis') renderAnalisisCasa();
   if(id==='v-categorias'){ renderCategorias(); renderCuotasList(); renderPerfilesList(); renderCuentasBanco(); renderSyncEstado(); document.getElementById('cfgP1').value=CONFIG.p1; document.getElementById('cfgP2').value=CONFIG.p2; document.getElementById('sheetsUrlInput').value = SHEETS_URL; }
   if(id==='v-registrar') renderRecientes();
@@ -951,8 +978,12 @@ function tagClaseMovimiento(m){
 function renderRecientes(){
   hoy = new Date();
   document.getElementById('mesRegistrarLabel').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
-  const delMes = MOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id)).slice(0,8);
+  const delMes = MOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id));
   const cont = document.getElementById('listaRecientes');
+  cont.style.maxHeight = '460px'; cont.style.overflowY = 'auto';
+  const gastosMes = delMes.filter(m=>m.tipoMovimiento!=='aporte').reduce((s,m)=>s+m.monto,0);
+  const aportesMes = delMes.filter(m=>m.tipoMovimiento==='aporte').reduce((s,m)=>s+m.monto,0);
+  document.getElementById('registrarLinea').textContent = delMes.length ? delMes.length+' movimiento(s) · gastos $'+fmt(gastosMes)+' · aportes $'+fmt(aportesMes) : '';
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
     <div class="gasto-item" onclick="abrirModalEditar('${m.id}')" style="cursor:pointer">
@@ -1093,6 +1124,7 @@ function marcarPagadoDirecto(id){
   sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas, tieneFotos:!!m.tieneFotos, pagado:true, fechaPago:m.fechaPago, cuentaOrigen:m.cuentaOrigen||''});
   toast('Marcado como pagado'+(m.cuentaOrigen?' — '+m.cuentaOrigen:''));
   renderRecientes();
+  if(document.getElementById('v-resumen').classList.contains('active')) renderResumen();
   if(document.getElementById('v-balance').classList.contains('active')) renderBalance();
 }
 
@@ -1649,8 +1681,12 @@ function guardarMovimientoPersonal(){
 function renderRecientesP(){
   hoy = new Date();
   document.getElementById('mesRegistrarLabelP').textContent = MESES[hoy.getMonth()]+' '+hoy.getFullYear();
-  const delMes = PMOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id)).slice(0,8);
+  const delMes = PMOVS.filter(m=>m.mes===hoy.getMonth() && m.anio===hoy.getFullYear()).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'') || b.id.localeCompare(a.id));
   const cont = document.getElementById('listaRecientesP');
+  cont.style.maxHeight = '460px'; cont.style.overflowY = 'auto';
+  const ingMes = delMes.filter(m=>m.tipoMovimiento==='ingreso').reduce((s,m)=>s+m.monto,0);
+  const gasMes = delMes.filter(m=>m.tipoMovimiento==='gasto').reduce((s,m)=>s+m.monto,0);
+  document.getElementById('registrarLineaP').textContent = delMes.length ? delMes.length+' movimiento(s) · ingresos $'+fmt(ingMes)+' · gastos $'+fmt(gasMes) : '';
   if(!delMes.length){ cont.innerHTML='<div class="empty">Sin movimientos aún este mes</div>'; return; }
   cont.innerHTML = delMes.map(m=>`
     <div class="gasto-item" onclick="abrirModalEditarP('${m.id}')" style="cursor:pointer">
@@ -2182,6 +2218,70 @@ function guardarCargaFijos(){
   cerrarCargaFijos();
   toast(guardados+' movimientos guardados'+(SHEETS_URL?' y enviados a Sheets':' (solo local, sin URL de Sheets configurada)'));
   renderRecientes();
+}
+
+/* ============ RESUMEN DEL MES (CASA) ============ */
+function renderResumen(){
+  hoy = new Date();
+  const mes = hoy.getMonth(), anio = hoy.getFullYear();
+  document.getElementById('resumenMesLabel').textContent = MESES[mes]+' '+anio;
+  const gastosDe = (m,a)=>MOVS.filter(x=>x.mes===m && x.anio===a && x.tipoMovimiento!=='aporte');
+  const suma = l=>l.reduce((s,x)=>s+(Number(x.monto)||0),0);
+  const actuales = gastosDe(mes,anio);
+  const [pm,pa] = mes===0 ? [11,anio-1] : [mes-1,anio];
+  const previos = gastosDe(pm,pa);
+  const total = suma(actuales);
+
+  // 1. Dónde se fuga: categorías que más subieron frente al mes anterior
+  const porCat = l=>{ const o={}; l.forEach(x=>{ o[x.categoria]=(o[x.categoria]||0)+x.monto; }); return o; };
+  const c1 = porCat(actuales), c0 = porCat(previos);
+  const subidas = Object.keys(c1).map(k=>({cat:k, act:c1[k], prev:c0[k]||0, dif:c1[k]-(c0[k]||0)}))
+    .filter(x=>x.dif>0).sort((a,b)=>b.dif-a.dif).slice(0,3);
+  document.getElementById('resumenFugas').innerHTML = !previos.length
+    ? '<div class="empty">Aún no hay un mes anterior con datos para comparar</div>'
+    : subidas.length
+      ? subidas.map(s=>`<div class="split-row"><span>${esc(s.cat)}<br><small class="hint" style="margin:0">Mes anterior $${fmt(s.prev)}</small></span><span style="text-align:right; color:var(--debe)">+$${fmt(s.dif)}<br><small class="hint" style="margin:0">Ahora $${fmt(s.act)}</small></span></div>`).join('')
+        + '<small class="hint">Comparado con el mes anterior completo: si ya lo superas a mitad de mes, es una fuga real.</small>'
+      : '<div class="empty">Ninguna categoría supera todavía lo del mes anterior</div>';
+
+  // 2. Gastado vs planificado (fijos habituales + presupuestos variables + cuotas activas)
+  const planFijos = CATEGORIAS.filter(c=>c.tipo==='fijo').reduce((s,c)=>s+(c.items||[]).reduce((t,i)=>t+(Number(i.montoHabitual)||0),0),0);
+  const planVar = CATEGORIAS.filter(c=>c.tipo==='variable').reduce((s,c)=>s+(Number(c.presupuesto)||0),0);
+  const planCuotas = CUOTAS.filter(q=>q.activo).reduce((s,q)=>s+(Number(q.montoCuota)||0),0);
+  const plan = planFijos + planVar + planCuotas;
+  const dif = plan - total, pct = plan>0 ? total/plan*100 : 0;
+  document.getElementById('resumenPlan').innerHTML = `
+    <div class="balance-num ${total>plan&&plan>0?'debe':'favor'}">$${fmt(total)}</div>
+    <div class="balance-sub">de $${fmt(plan)} planificado (fijos $${fmt(planFijos)} · variables $${fmt(planVar)} · cuotas $${fmt(planCuotas)})</div>
+    <div class="progress"><div class="progress-fill ${total>plan&&plan>0?'over':''}" style="width:${Math.min(100,pct)}%"></div></div>
+    <div class="balance-sub" style="margin-top:6px">${plan<=0 ? 'Configura montos habituales y presupuestos para ver el plan.' : dif>=0 ? 'Quedan $'+fmt(dif)+' de lo planificado' : 'Vas $'+fmt(-dif)+' sobre lo planificado'}</div>`;
+
+  // 3. Por pagar: gastos fijos del mes sin marcar como pagados
+  const pend = actuales.filter(x=>x.tipoMovimiento==='fijo' && !x.pagado).sort((a,b)=>b.monto-a.monto);
+  document.getElementById('resumenPorPagar').innerHTML = pend.length
+    ? `<div class="balance-sub" style="margin-bottom:6px">${pend.length} gasto(s) fijo(s) sin pagar · $${fmt(suma(pend))}</div>`
+      + pend.slice(0,6).map(m=>`<div class="gasto-item"><div><div>${esc(m.item)}</div><div class="meta">${esc(m.categoria)}</div></div><div class="monto">$${fmt(m.monto)}<button class="btn-ghost btn-xs" style="margin-left:8px; color:var(--favor); border-color:var(--favor)" onclick="marcarPagadoDirecto('${m.id}')">✓ Pagado</button></div></div>`).join('')
+      + (pend.length>6 ? `<small class="hint">y ${pend.length-6} más — están en Balance</small>` : '')
+    : '<div class="empty">No hay gastos fijos pendientes este mes</div>';
+
+  // 4. Presupuesto variable: uso real vs ritmo del mes
+  const dia = hoy.getDate(), diasMes = new Date(anio,mes+1,0).getDate(), frac = dia/diasMes;
+  const variables = CATEGORIAS.filter(c=>c.tipo==='variable');
+  document.getElementById('resumenVariables').innerHTML = variables.length ? variables.map(c=>{
+    const g = suma(actuales.filter(x=>x.tipoMovimiento==='variable' && x.categoria===c.nombre));
+    const presu = c.presupuesto||0, usado = presu>0 ? g/presu : 0;
+    const proy = Math.round(g/frac), pasa = presu>0 && proy>presu;
+    return `<div class="presu-row"><div class="presu-top"><span>${esc(c.nombre)}</span><span>$${fmt(g)} / $${fmt(presu)}</span></div>
+      <div class="progress"><div class="progress-fill ${g>presu?'over':''}" style="width:${Math.min(100,usado*100)}%"></div></div>
+      <div class="presu-sub" style="${pasa?'color:var(--debe)':''}">Llevas el ${Math.round(usado*100)}% del presupuesto con el ${Math.round(frac*100)}% del mes${g>0?' · a este ritmo cerrarías en $'+fmt(proy):''}${pasa?' (sobre el presupuesto)':''}</div></div>`;
+  }).join('') : '<div class="empty">Sin categorías variables configuradas</div>';
+
+  // 6. Tendencia de los últimos 6 meses
+  const totales = ultimosNMeses(6).map(({mes:m,anio:a})=>({m, a, total:suma(gastosDe(m,a))}));
+  const max = Math.max(...totales.map(t=>t.total), 1);
+  document.getElementById('resumenTendencia').innerHTML = totales.map(t=>`
+    <div class="presu-row"><div class="presu-top"><span>${MESES[t.m].slice(0,3)} ${t.a}${t.m===mes&&t.a===anio?' (en curso)':''}</span><span>$${fmt(t.total)}</span></div>
+    <div class="progress"><div class="progress-fill" style="width:${t.total/max*100}%"></div></div></div>`).join('');
 }
 
 /* ============ ANÁLISIS Y RECOMENDACIONES (CASA) ============ */
