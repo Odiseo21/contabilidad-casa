@@ -648,6 +648,18 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
   </div>
 </div>
 
+<!-- Modal verificación contra el Sheet -->
+<div class="modal-bg" id="modalVerif">
+  <div class="modal">
+    <h3>Comparación con el Sheet</h3>
+    <div id="verifContenido"></div>
+    <div class="row2" style="margin-top:14px">
+      <button class="btn-ghost" onclick="cerrarModalVerif()">Cerrar</button>
+      <button class="btn-primary" id="verifEnviarBtn" style="margin-top:0" onclick="enviarFaltantesVerif()">Enviar los que faltan</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal limpiar duplicados -->
 <div class="modal-bg" id="modalDuplicados">
   <div class="modal">
@@ -1496,6 +1508,7 @@ function procesarCuotasAutomaticas(){
   hoy = new Date();
   const mesActual = hoy.getMonth(), anioActual = hoy.getFullYear();
   let generadas = [];
+  const loteCuotas = [];
   CUOTAS.forEach(c=>{
     if(!c.activo || c.cuotaActual>=c.nCuotas) return;
     // También se reconoce por el texto del ítem: cuotaId no viaja al Sheet, así que una cuota
@@ -1510,12 +1523,13 @@ function procesarCuotasAutomaticas(){
       categoria:c.categoria, item, monto:c.montoCuota, persona:'', notas:'Cuota generada automáticamente', cuotaId:c.id, tieneFotos:false,
       pagado:false, fechaPago:'', cuentaOrigen:c.cuentaDestino||'' };
     MOVS.push(m);
-    sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
+    loteCuotas.push({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
     if(c.cuotaActual>=c.nCuotas) c.activo = false;
     generadas.push(item);
   });
   if(generadas.length){
     persist();
+    enviarMovimientosEnLote(loteCuotas);
     sync('cuotas', CUOTAS);
     toast(generadas.length+' cuota(s) de crédito registradas automáticamente este mes');
     if(document.getElementById('v-registrar').classList.contains('active')) renderRecientes();
@@ -2200,6 +2214,7 @@ function guardarCargaFijos(){
   const d = new Date(fecha+'T00:00:00');
   const filas = [...document.querySelectorAll('#cargaFijosCont .item-row')];
   let guardados = 0;
+  const loteEnvio = [];
 
   filas.forEach(row=>{
     const check = row.querySelector('.cf-check');
@@ -2217,7 +2232,7 @@ function guardarCargaFijos(){
     const m = { id:'m'+Date.now()+Math.floor(Math.random()*1000)+guardados, tipoMovimiento:tipo, fecha, mes:d.getMonth(), anio:d.getFullYear(),
       categoria, item, monto, persona:'', notas:'', fotoLocal:null, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:cuentaDestino };
     MOVS.push(m);
-    sync('movimiento', {id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
+    loteEnvio.push({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:'', notas:m.notas, tieneFotos:false, pagado:false, fechaPago:'', cuentaOrigen:m.cuentaOrigen});
 
     if(tipo==='fijo'){
       const cat = CATEGORIAS.find(c=>c.nombre===categoria);
@@ -2228,7 +2243,7 @@ function guardarCargaFijos(){
     guardados++;
   });
 
-  if(guardados){ persist(); sync('categorias', CATEGORIAS.filter(c=>c.tipo==='fijo')); }
+  if(guardados){ persist(); enviarMovimientosEnLote(loteEnvio); sync('categorias', CATEGORIAS.filter(c=>c.tipo==='fijo')); }
   cerrarCargaFijos();
   toast(guardados+' movimientos guardados'+(SHEETS_URL?' y enviados a Sheets':' (solo local, sin URL de Sheets configurada)'));
   renderRecientes();
@@ -2475,28 +2490,78 @@ async function reintentarSync(){
   toast('Listo — revisa el Sheet en un momento (puede tardar unos segundos en reflejarse)');
 }
 // Los envíos al Sheet usan no-cors: la app no puede saber si llegaron. Esto lo comprueba leyendo el Sheet.
+const payloadMov = m=>({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas||'', tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''});
+
+// Envía movimientos al Sheet en lotes, UNO A LA VEZ. Disparar un envío por movimiento a la vez
+// (como hacía la carga rápida) hace que Google rechace varios y queden fuera del Sheet.
+async function enviarMovimientosEnLote(lote){
+  if(!lote.length) return;
+  if(!SHEETS_URL){ lote.forEach(d=>PENDIENTES.push({accion:'movimiento', data:d})); persist(); renderSyncEstado(); return; }
+  const TAMAÑO_LOTE = 150;
+  for(let i=0; i<lote.length; i+=TAMAÑO_LOTE){
+    const parte = lote.slice(i, i+TAMAÑO_LOTE);
+    try{
+      await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:'movimientos_batch', data:parte})});
+    } catch(err){
+      parte.forEach(d=>PENDIENTES.push({accion:'movimiento', data:d})); persist();
+    }
+  }
+  renderSyncEstado();
+}
+
+// Compara este celular con el Sheet: totales del mes por tipo y movimientos que no coinciden.
+let verifFaltan = [];
 async function verificarSheet(){
   if(!SHEETS_URL){ toast('Falta configurar la URL de Google Sheets'); return; }
   toast('Comparando con el Sheet...');
   try{
     const data = await (await fetch(SHEETS_URL, {method:'GET'})).json();
     const filas = data.Movimientos || [];
-    const idCol = filas.length ? filas[0].indexOf('ID') : -1;
-    const enSheet = new Set(idCol>=0 ? filas.slice(1).map(r=>r[idCol]) : []);
-    const faltan = MOVS.filter(m=>!enSheet.has(m.id));
-    const txt = 'Este celular: '+MOVS.length+' movimientos · Sheet: '+enSheet.size+' · Faltan en el Sheet: '+faltan.length;
-    document.getElementById('syncTexto').textContent = txt;
-    if(!faltan.length){ toast('El Sheet tiene todos los movimientos de este celular'); return; }
-    if(!confirm(txt+'\n\n¿Enviar al Sheet los '+faltan.length+' que faltan?')) return;
-    const TAMAÑO_LOTE = 150;
-    for(let i=0; i<faltan.length; i+=TAMAÑO_LOTE){
-      const lote = faltan.slice(i, i+TAMAÑO_LOTE).map(m=>({id:m.id, tipoMovimiento:m.tipoMovimiento, fecha:m.fecha, mes:MESES[m.mes], anio:m.anio, categoria:m.categoria, item:m.item, monto:m.monto, persona:m.persona||'', notas:m.notas||'', tieneFotos:!!m.tieneFotos, pagado:!!m.pagado, fechaPago:m.fechaPago||'', cuentaOrigen:m.cuentaOrigen||''}));
-      await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:'movimientos_batch', data:lote})});
-    }
-    toast('Enviados '+faltan.length+'. Espera unos segundos y vuelve a verificar.');
+    const h = filas[0] || [], ix = n=>h.indexOf(n);
+    const delSheet = filas.slice(1).filter(r=>r[ix('ID')]).map(r=>({
+      id:r[ix('ID')], tipoMovimiento:r[ix('TipoMovimiento')], mes:MESES.indexOf(r[ix('Mes')]), anio:Number(r[ix('Año')]),
+      categoria:r[ix('Categoria')], item:r[ix('Item')], monto:Number(r[ix('Monto')])||0 }));
+    const porId = {};
+    delSheet.forEach(r=>{ (porId[r.id] = porId[r.id] || []).push(r); });
+    const idsLocales = new Set(MOVS.map(m=>m.id));
+    verifFaltan = MOVS.filter(m=>!porId[m.id]);
+    const soloSheet = delSheet.filter(r=>!idsLocales.has(r.id));
+    const distintos = MOVS.filter(m=>porId[m.id] && Math.round(porId[m.id][0].monto)!==Math.round(m.monto));
+    const repetidos = Object.values(porId).filter(a=>a.length>1);
+
+    const delMes = x=>x.mes===vistaMes && x.anio===vistaAnio;
+    const tipos = ['fijo','variable','cuenta'];
+    const suma = (lista,t)=>lista.filter(x=>delMes(x) && x.tipoMovimiento===t).reduce((s,x)=>s+(Number(x.monto)||0),0);
+    const filaTipo = t=>{
+      const a = suma(MOVS,t), s = suma(delSheet,t), d = s-a;
+      return `<div class="split-row"><span>${t}</span><span>App $${fmt(a)} · Sheet $${fmt(s)}<br><b style="color:${d===0?'var(--favor)':'var(--debe)'}">${d===0?'Coincide':'Diferencia $'+fmt(d)}</b></span></div>`;
+    };
+    const lista = (arr,fn,max)=>arr.slice(0,max||8).map(fn).join('') + (arr.length>(max||8) ? `<small class="hint">y ${arr.length-(max||8)} más</small>` : '');
+    const linea = m=>`<div class="split-row" style="font-size:.82rem"><span>${esc(m.item)} · ${esc(m.categoria)}</span><span>$${fmt(m.monto)}</span></div>`;
+
+    let html = `<div class="section-label">${MESES[vistaMes]} ${vistaAnio} — totales por tipo</div>` + tipos.map(filaTipo).join('')
+      + `<small class="hint">El mes es el que estás viendo en Balance. "Diferencia" = Sheet − App.</small>`;
+    if(verifFaltan.length) html += `<div class="section-label">Están en la app y NO en el Sheet (${verifFaltan.length} · $${fmt(verifFaltan.reduce((s,m)=>s+m.monto,0))})</div>` + lista(verifFaltan, linea);
+    if(soloSheet.length) html += `<div class="section-label">Están en el Sheet y NO en esta app (${soloSheet.length} · $${fmt(soloSheet.reduce((s,m)=>s+m.monto,0))})</div>` + lista(soloSheet, linea) + `<small class="hint">Pueden ser del otro celular o errores: usa "Buscar y borrar duplicados" para revisarlos.</small>`;
+    if(distintos.length) html += `<div class="section-label">Mismo registro, monto distinto (${distintos.length})</div>` + lista(distintos, m=>`<div class="split-row" style="font-size:.82rem"><span>${esc(m.item)}</span><span>App $${fmt(m.monto)} · Sheet $${fmt(porId[m.id][0].monto)}</span></div>`) + `<small class="hint">El Sheet no se actualiza con reenviar; corrige esas celdas a mano o borra la fila y reenvía.</small>`;
+    if(repetidos.length) html += `<div class="section-label">IDs repetidos en el Sheet (${repetidos.length})</div><small class="hint">Hay filas duplicadas con el mismo ID: bórralas a mano en Google Sheets.</small>`;
+    if(!verifFaltan.length && !soloSheet.length && !distintos.length && !repetidos.length) html += `<div class="empty">El Sheet y la app tienen los mismos movimientos.</div>`;
+
+    document.getElementById('verifContenido').innerHTML = html;
+    document.getElementById('verifEnviarBtn').style.display = verifFaltan.length ? '' : 'none';
+    document.getElementById('verifEnviarBtn').textContent = 'Enviar los '+verifFaltan.length+' que faltan';
+    document.getElementById('modalVerif').classList.add('active');
   } catch(err){
     toast('No se pudo leer el Sheet (revisa la URL y la conexión)');
   }
+}
+function cerrarModalVerif(){ document.getElementById('modalVerif').classList.remove('active'); }
+async function enviarFaltantesVerif(){
+  const lote = verifFaltan.map(payloadMov);
+  cerrarModalVerif();
+  toast('Enviando '+lote.length+' al Sheet...');
+  await enviarMovimientosEnLote(lote);
+  toast('Enviados '+lote.length+'. Espera unos segundos y vuelve a verificar.');
 }
 
 /* ============ LIMPIAR DUPLICADOS ============ */
