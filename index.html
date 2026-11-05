@@ -429,6 +429,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
       <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reintentarSync()">Reintentar sincronización pendiente</button>
       <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="verificarSheet()">Verificar qué falta en el Sheet</button>
       <small class="hint">Compara los movimientos de este celular con los del Sheet y envía solo los que faltan.</small>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reenviarConfiguracion()">Reenviar cuotas, catálogo y cuentas al Sheet</button>
+      <small class="hint">Úsalo en el dispositivo donde cargaste esos datos, para que los demás celulares los reciban.</small>
       <button class="btn-danger btn-sm" style="margin-top:12px; width:100%" onclick="abrirDuplicados()">Buscar y borrar duplicados</button>
       <small class="hint">Busca copias exactas en este celular y filas que están solo en el Sheet. Tú eliges qué borrar antes de confirmar.</small>
     </div>
@@ -2486,8 +2488,11 @@ async function reintentarSync(){
   }
 
   // El resto (categorías, cuentas, perfiles, cuotas, cierres, eliminar, personal) va uno por uno, como antes — son pocos.
+  // Uno por uno y con pausa: mandarlos todos a la vez hace que Google rechace varios.
   for(const p of otros){
-    sync(p.accion, p.data);
+    try{ await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion:p.accion, data:p.data})}); }
+    catch(err){ PENDIENTES.push(p); }
+    await new Promise(r=>setTimeout(r,400));
   }
 
   persist();
@@ -2559,6 +2564,26 @@ async function verificarSheet(){
   } catch(err){
     toast('No se pudo leer el Sheet (revisa la URL y la conexión)');
   }
+}
+// Reenvía catálogo, presupuestos, cuotas, perfiles y cuentas (no los movimientos). Sirve para que otro
+// dispositivo reciba las compras a cuotas y la configuración que un PC creó antes de que el envío funcionara.
+async function reenviarConfiguracion(){
+  if(!SHEETS_URL){ toast('Falta configurar la URL de Google Sheets'); return; }
+  toast('Reenviando configuración... no cierres la app');
+  const envios = [
+    ['categorias', CATEGORIAS.filter(c=>c.tipo!=='variable')],
+    ['presupuestos', CATEGORIAS.filter(c=>c.tipo==='variable').map(c=>({categoria:c.nombre, monto:c.presupuesto||0}))],
+    ['cuotas', CUOTAS],
+    ['perfiles', PERFILES],
+    ['cuentas', CUENTAS.map(c=>({nombre:nombreCuenta(c), dueño:dueñoCuenta(c)}))],
+  ];
+  for(const [accion,data] of envios){
+    try{ await fetch(SHEETS_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({accion,data})}); }
+    catch(err){ PENDIENTES.push({accion,data}); persist(); }
+    await new Promise(r=>setTimeout(r,600));
+  }
+  renderSyncEstado();
+  toast('Listo: '+CUOTAS.length+' compra(s) a cuotas y el catálogo quedaron en el Sheet');
 }
 function cerrarModalVerif(){ document.getElementById('modalVerif').classList.remove('active'); }
 async function enviarFaltantesVerif(){
