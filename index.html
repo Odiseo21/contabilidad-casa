@@ -370,6 +370,8 @@ small.hint{color:var(--muted); display:block; margin-top:6px; font-size:.75rem;}
       <h3>Compras a cuotas <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCuota()">+ Nueva</button></h3>
       <small class="hint">No es un gasto opcional del mes — mientras esté activa, la cuota correspondiente se registra sola en el Balance cada mes, sin que tengas que confirmarla.</small>
       <div id="listaCuotas" style="margin-top:8px"></div>
+      <button class="btn-ghost btn-sm" style="margin-top:8px; width:100%" onclick="reconstruirCuotas()">Reconstruir desde los movimientos del Balance</button>
+      <small class="hint">Si en el Balance ves cuotas como "Sillón (cuota 3/12)" pero esta lista está vacía, esto las recrea a partir de esos movimientos.</small>
     </div>
     <div class="card">
       <h3>Gastos fijos (catálogo) <button class="btn-ghost btn-sm" style="float:right" onclick="abrirModalCategoria('fijo')">+ Nueva</button></h3>
@@ -1442,6 +1444,36 @@ function renderCuotasList(){
       <div class="cat-items">${esc(c.categoria)} · $${fmt(c.montoCuota)}/mes · ${estado}</div></div>
       <div style="display:flex; gap:6px; flex-shrink:0"><button class="btn-ghost btn-xs" onclick="abrirModalCuota(${idx})">Editar</button></div></div>`;
   }).join('');
+}
+
+// Recrea la lista de compras a cuotas a partir de movimientos con el formato "Nombre (cuota n/N)".
+// Sirve cuando los movimientos llegaron (por ejemplo al sincronizar) pero la hoja de cuotas no.
+function reconstruirCuotas(){
+  const re = /^(.*) \(cuota (\d+)\/(\d+)\)$/;
+  const grupos = {};
+  MOVS.forEach(m=>{
+    if(m.tipoMovimiento!=='fijo') return;
+    const r = re.exec(m.item || ''); if(!r) return;
+    const nombre = r[1], n = Number(r[2]), N = Number(r[3]);
+    const k = nombre.toLowerCase()+'|'+N;
+    const g = grupos[k] || (grupos[k] = {nombre, N, maxN:0, ultimo:null});
+    if(n > g.maxN){ g.maxN = n; g.ultimo = m; }
+  });
+  const eliminadas = ELIMINADOS.cuotas || [];
+  let nuevas = 0;
+  Object.values(grupos).forEach(g=>{
+    if(CUOTAS.some(q=>String(q.nombre).toLowerCase()===g.nombre.toLowerCase() && Number(q.nCuotas)===g.N)) return;
+    const id = 'qr'+hashEstable(g.nombre.toLowerCase()+'|'+g.N).slice(3);
+    if(eliminadas.includes(id)) return;
+    CUOTAS.push({id, nombre:g.nombre, categoria:g.ultimo.categoria, montoCuota:g.ultimo.monto, nCuotas:g.N,
+      cuotaActual:g.maxN, activo:g.maxN<g.N, cuentaDestino:g.ultimo.cuentaOrigen||''});
+    nuevas++;
+  });
+  if(!nuevas){ toast('No hay compras a cuotas nuevas para reconstruir (o ya están en la lista)'); return; }
+  persist();
+  sync('cuotas', CUOTAS);
+  renderCuotasList();
+  toast(nuevas+' compra(s) a cuotas reconstruida(s) desde los movimientos');
 }
 
 function abrirModalCuota(idx){
